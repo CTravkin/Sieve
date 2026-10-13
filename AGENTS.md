@@ -15,9 +15,11 @@ Before starting implementation, read the [development plan](Plans/Development.md
 - Target desktop, iOS, and Android. Node.js and Electron must not be imported into shared/mobile code. Platform support remains unverified until actual host/device checks pass.
 - Filtering must preserve source files and Obsidian's access to its configuration. Never implement deletion as a filtering side effect.
 - Settings are scoped to the current vault. The UI must not claim that saved rules have been applied unless application is verified.
+- Rules are edited in the UI or `<configDir>/plugins/sieve/data.json`. Apply after reopening the vault; successful UI saves offer a vault reload. Russian Obsidian uses RU, every other language uses EN.
 
 ## Verification and Delivery
 
-- Run `npm.cmd run check` and `npm.cmd test` on Windows before committing. These currently validate repository assets, not filtering or host compatibility.
-- The release version and build number are not assigned. Do not add placeholders or assign them automatically; Constantine will decide when versioning starts. After assignment, follow [Versioning](Docs/Versioning.md) and use `X.Y.Z (N)` for versioned commit prefixes.
+- Run `npm.cmd run check` and `npm.cmd test` on Windows before committing. These validate assets and diagnostic hooks; native host evidence is a separate check.
+- Development versions start with major 0 and increase with new source builds; build numbers do not reset at release. Follow [Versioning](Docs/Versioning.md) and use `X.Y.Z (N)` for versioned commit prefixes. Constantine assigns the public release version separately.
+- [Probe tools](Tools/TOOLS.md) create disposable fixtures and diagnostic packages only. Their prefix classifier is not the production Syncthing matcher. Do not install a probe into a user vault.
 - Keep the repository private until Constantine explicitly authorizes publication. Do not create a release or change visibility as part of routine development.

@@ -1,5 +1,7 @@
 {
   "name": "sieve",
+  "version": "0.2.0",
+  "sieveBuild": 2,
   "private": true,
   "description": "Excludes files and folders before vault indexing",
   "type": "module",
@@ -9,6 +11,11 @@
   },
   "scripts": {
     "check": "node Tools/check-project.mjs",
-    "test": "node --test Tests/*.test.mjs"
+    "test": "node --test Tests/*.test.mjs",
+    "build:probe": "node Tools/Probe/build.mjs",
+    "probe:fixture": "node Tools/Probe/fixture.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

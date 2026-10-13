@@ -6,9 +6,9 @@ An Obsidian plugin that excludes files and folders before vault indexing.
 
 ## Status
 
-The first version is in development. This repository currently contains translations, syntax help, requirements, and checks for those assets. The filtering engine and settings UI are not implemented yet; there is no installable release.
+The first version is in development. The repository contains translations, syntax help, requirements, and an early traversal diagnostic probe. The full filtering engine and settings UI are not implemented yet; there is no installable release.
 
-The plugin version and build number are not assigned yet. The manifest has no `version` field and is a planning asset, not an installable manifest.
+Development version: `0.2.0 (2)`. The probe is only for disposable test vaults and does not implement filter syntax. [Probe commands and limitations (Russian)](Tools/TOOLS.md).
 
 ## Features
 
