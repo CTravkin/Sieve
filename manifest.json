@@ -1,0 +1,10 @@
+{
+  "id": "sieve",
+  "name": "Sieve",
+  "version": "0.1.0",
+  "minAppVersion": "1.14.4",
+  "description": "Excludes files and folders before vault indexing",
+  "author": "Constantine Travkin",
+  "authorUrl": "https://github.com/CTravkin",
+  "isDesktopOnly": false
+}

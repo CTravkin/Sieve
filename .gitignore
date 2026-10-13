@@ -1,0 +1,8 @@
+node_modules/
+dist/
+Local/
+.obsidian/
+.env
+.env.*
+*.log
+*.tsbuildinfo
