@@ -6,6 +6,8 @@ function host() {
   const calls = [];
   const adapter = {
     basePath: '/fixture',
+    trigger() {},
+    removeFile() {},
     fsPromises: {
       async readdir(path) { calls.push(['readdir', path]); return []; },
       async lstat(path) { calls.push(['lstat', path]); return {}; },
@@ -131,7 +133,22 @@ test('a retained lifecycle wrapper stops recording after unload and preserves it
   dispose();
   assert.equal(vault.load, foreign);
   assert.equal(vault.load(), 2);
+  assert.equal(events.length, 2);
+});
+
+test('startup timing observes asynchronous completion without replacing the host promise', async () => {
+  const events = [];
+  let complete;
+  const promise = new Promise(resolve => { complete = resolve; });
+  const vault = { load: () => promise };
+  const dispose = observeVaultLoad(vault, event => events.push(event));
+  assert.equal(vault.load(), promise);
   assert.equal(events.length, 1);
+  complete('loaded');
+  assert.equal(await promise, 'loaded');
+  assert.equal(events[1].method, 'vault-load-end');
+  assert.ok(events[1].durationMs >= 0);
+  dispose();
 });
 
 test('copying a probe into an unmarked vault cannot activate filtering', () => {
@@ -140,4 +157,36 @@ test('copying a probe into an unmarked vault cannot activate filtering', () => {
   const hooks = installProbeHooks(adapter, { excluded: ['Technical'], included: [], filtered: true }, () => {});
   assert.equal(hooks.status, 'unsupported');
   assert.equal(adapter.listRecursiveChild, originalChild);
+});
+
+test('a rename into an excluded path updates retained file references before removing only index entries', () => {
+  const { adapter, calls } = host();
+  const retained = { path: 'Docs/note.md', deleted: false };
+  const index = new Map([[retained.path, retained]]);
+  adapter.files = { [retained.path]: { realpath: retained.path } };
+  adapter.trigger = (type, path, oldPath) => {
+    calls.push([type, path, oldPath]);
+    if (type === 'renamed') {
+      const file = index.get(oldPath);
+      if (file) { index.delete(oldPath); file.path = path; index.set(path, file); }
+    } else if (type === 'file-removed') {
+      const file = index.get(path);
+      if (file) { file.deleted = true; index.delete(path); }
+    }
+  };
+  adapter.removeFile = function (path) {
+    delete this.files[path];
+    this.trigger('file-removed', path);
+  };
+  const events = [];
+  installProbeHooks(adapter, { probeFixture: true, excluded: ['Technical'], included: [], filtered: true }, (event) => events.push(event));
+  adapter.files['Technical/note.md'] = adapter.files['Docs/note.md'];
+  delete adapter.files['Docs/note.md'];
+  adapter.trigger('renamed', 'Technical/note.md', 'Docs/note.md');
+  assert.equal(retained.path, 'Technical/note.md');
+  assert.equal(retained.deleted, true);
+  assert.equal(index.size, 0);
+  assert.deepEqual(adapter.files, {});
+  assert.deepEqual(calls, [['renamed', 'Technical/note.md', 'Docs/note.md'], ['file-removed', 'Technical/note.md', undefined]]);
+  assert.deepEqual(events.filter(event => event.kind === 'index-prune'), [{kind: 'index-prune', method: 'renamed', path: 'Technical/note.md'}]);
 });

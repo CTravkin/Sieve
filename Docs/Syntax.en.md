@@ -2,7 +2,7 @@
 
 [Русский](Syntax.ru.md) · [English](Syntax.en.md)
 
-Compatible with Syncthing filter syntax. Sieve uses Syncthing 2.1.6 as its reference. This is a reference for the planned engine; implementation compatibility has not been verified yet.
+Sieve uses Syncthing 2.1.6 as its reference. The common matcher agrees with the native Windows and Linux oracle across the tested corpus. Obsidian integration and other platforms require separate verification; see [Oracle](../Tools/Oracle/README.md) for pins and commands.
 
 ## Rule order
 
@@ -24,7 +24,7 @@ Blank lines and repeated identical lines are skipped. Leading and trailing white
 | `[!a-z]` | One character outside the range |
 | `{md,txt,pdf}` | One of the listed alternatives |
 
-These are patterns, not regular expressions. Separators around `**` remain part of a pattern: `a/**/b` does not match `a/b`. Syncthing additionally handles a leading `**/` so the pattern can match at the root.
+These are patterns, not regular expressions. The native Syncthing 2.1.6 matcher matches `a/**/b` against both `a/b` and `a/x/b`: behavior depends on its glob optimizer. A leading `**/` is additionally handled so the pattern can match at the root.
 
 ## Prefixes
 

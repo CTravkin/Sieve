@@ -16,7 +16,7 @@ function flatten(value, prefix = '') {
 async function listMarkdown(directory) {
   const result = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith('.') || ['node_modules', 'Local', 'dist'].includes(entry.name)) continue;
+    if (entry.name.startsWith('.') || ['node_modules', 'Local', 'dist', 'Dev', 'QA', 'Review', 'Ops'].includes(entry.name)) continue;
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) result.push(...await listMarkdown(target));
     else if (entry.name.endsWith('.md')) result.push(target);

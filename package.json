@@ -1,7 +1,7 @@
 {
   "name": "sieve",
-  "version": "0.2.0",
-  "sieveBuild": 2,
+  "version": "0.3.0",
+  "sieveBuild": 3,
   "private": true,
   "description": "Excludes files and folders before vault indexing",
   "type": "module",
@@ -13,9 +13,14 @@
     "check": "node Tools/check-project.mjs",
     "test": "node --test Tests/*.test.mjs",
     "build:probe": "node Tools/Probe/build.mjs",
+    "build:core": "node Tools/build-core.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:core": "npm run build:core && node --test Tests/Core/*.test.mjs",
+    "test:oracle": "npm run build:core && node --test Tests/Oracle/*.test.mjs",
     "probe:fixture": "node Tools/Probe/fixture.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
   }
 }

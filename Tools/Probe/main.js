@@ -1,5 +1,6 @@
 import { Plugin, Platform, apiVersion, Notice } from 'obsidian';
 import { installProbeHooks, observeVaultLoad } from './hooks.mjs';
+import { hasObservedStartup } from './report.mjs';
 
 // Disposable research plugin. Prefix fixtures do not implement filter syntax.
 export default class SieveProbe extends Plugin {
@@ -14,12 +15,14 @@ export default class SieveProbe extends Plugin {
     };
     this.options = { excluded: ['Technical'], included: [], filtered: false, ...(await this.loadData()), configDir: this.app.vault.configDir };
     if (this.options.probeFixture !== true) return;
+    (globalThis.sieveProbeOrder ??= []).push({ plugin:'sieve', method:'onload-start', at:started });
     await new Promise((resolve) => setTimeout(resolve, this.options.prepareDelayMs ?? 50));
     const vault = this.app.vault;
     this.register(observeVaultLoad(vault, record));
     this.hooks = installProbeHooks(vault.adapter, this.options, record);
     this.register(() => this.hooks.dispose());
-    this.report = () => ({
+    this.report = () => {
+      const report = {
       probe: true,
       version: this.manifest.version,
       apiVersion,
@@ -31,13 +34,16 @@ export default class SieveProbe extends Plugin {
       filtered: this.options.filtered,
       configDir: vault.configDir,
       vaultName: vault.getName(),
+      pluginOrder: globalThis.sieveProbeOrder ?? [],
       index: vault.getAllLoadedFiles().map((file) => file.path).sort(),
       metadata: this.app.metadataCache.getCachedFiles().sort(),
       counts: this.counts,
-      observedStartup: this.counts['lifecycle:vault-load-start'] === 1 && this.counts['scanner:listAll'] === 1,
+      vaultLoadDurationMs: this.counts['lifecycle:vault-load-end'] === 1 ? this.events.find(event => event.method === 'vault-load-end')?.durationMs ?? null : null,
       events: this.events,
       truncated: Object.values(this.counts).reduce((sum, count) => sum + count, 0) >= 100000,
-    });
+      };
+      return { ...report, observedStartup:hasObservedStartup(report) };
+    };
     globalThis.sieveProbe = this;
     this.register(() => { if (globalThis.sieveProbe === this) delete globalThis.sieveProbe; });
     this.addCommand({ id: 'export-probe-report', name: 'Export probe report', callback: async () => {
@@ -48,5 +54,6 @@ export default class SieveProbe extends Plugin {
     record({ kind: 'lifecycle', method: 'hooks-ready' });
     this.app.workspace.onLayoutReady(() => record({ kind: 'lifecycle', method: 'layout-ready' }));
     record({ kind: 'lifecycle', method: 'onload-end' });
+    globalThis.sieveProbeOrder.push({ plugin:'sieve', method:'onload-end', at:performance.now() });
   }
 }

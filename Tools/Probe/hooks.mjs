@@ -4,8 +4,15 @@ export function observeVaultLoad(vault, record) {
   const descriptor = Object.getOwnPropertyDescriptor(vault, 'load');
   let active = true;
   const wrapper = function (...args) {
+    const started = performance.now();
+    const finish = (method) => { if (active) record({ kind: 'lifecycle', method, durationMs: performance.now() - started }); };
     if (active) record({ kind: 'lifecycle', method: 'vault-load-start' });
-    return original.apply(this, args);
+    let result;
+    try { result = original.apply(this, args); }
+    catch (error) { finish('vault-load-error'); throw error; }
+    if (result && typeof result.then === 'function') result.then(() => finish('vault-load-end'), () => finish('vault-load-error'));
+    else finish('vault-load-end');
+    return result;
   };
   vault.load = wrapper;
   return () => {
@@ -17,12 +24,12 @@ export function observeVaultLoad(vault, record) {
 }
 
 export function installProbeHooks(adapter, options, record) {
-  const required = ['listRecursiveChild', 'reconcileFile', 'reconcileFileInternal', 'listRecursive', 'listAll'];
+  const required = ['listRecursiveChild', 'reconcileFile', 'reconcileFileInternal', 'listRecursive', 'listAll', 'trigger'];
   const patchable = (key) => {
     const descriptor = Object.getOwnPropertyDescriptor(adapter, key);
     return descriptor ? descriptor.configurable : Object.isExtensible(adapter);
   };
-  if (options.probeFixture !== true || !required.every((key) => typeof adapter[key] === 'function') || !adapter.fsPromises || ![...required, 'fsPromises'].every(patchable)) {
+  if (options.probeFixture !== true || !required.every((key) => typeof adapter[key] === 'function') || typeof adapter.removeFile !== 'function' || !adapter.fsPromises || ![...required, 'fsPromises'].every(patchable)) {
     return { status: 'unsupported', dispose() {} };
   }
   let active = true;
@@ -54,6 +61,17 @@ export function installProbeHooks(adapter, options, record) {
       else delete owner[key];
     });
   }
+  wrap(adapter, 'trigger', function (original, args) {
+    // Desktop rename bypasses reconcileFile. Let the host update any retained
+    // TFile path first, then forget only the adapter/index entry. removeFile is
+    // the host's in-memory bookkeeping method, never a filesystem operation.
+    const result = original.apply(this, args);
+    if (args[0] === 'renamed' && skip(args[1])) {
+      this.removeFile(args[1]);
+      record({ kind: 'index-prune', method: 'renamed', path: args[1] });
+    }
+    return result;
+  });
   for (const key of ['listRecursiveChild', 'reconcileFile', 'reconcileFileInternal']) {
     wrap(adapter, key, function (original, args) {
       const path = key === 'listRecursiveChild' ? (args[0] ? `${args[0]}/${args[1]}` : args[1]) : args[0];

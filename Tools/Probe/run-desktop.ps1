@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$RunDirectory,
-    [ValidateSet('Baseline', 'Filtered', 'Descendant')][string]$Variant = 'Filtered',
+    [ValidateSet('Baseline', 'Filtered', 'Descendant', 'SieveFirst', 'SieveLast', 'Alternate')][string]$Variant = 'Filtered',
     [string]$ObsidianPath = "$env:LOCALAPPDATA\Programs\Obsidian\Obsidian.exe"
 )
 $ErrorActionPreference = 'Stop'
@@ -34,6 +34,10 @@ function Stop-ProbeHost($probeHost, $probeSuffix) {
 }
 $probeHost = Start-ProbeHost
 try {
+    if ($probeVariant.configDir) {
+        & node.exe $probeInspector 9229 "$probePrefix-config-dir.json" config-dir $probeVariant.configDir
+        if ($LASTEXITCODE -ne 0) { throw 'Fixture configDir selection failed' }
+    }
     & node.exe $probeInspector 9229 "$probePrefix-enable.json" activate
     if ($LASTEXITCODE -ne 0) { throw 'Probe activation failed' }
 } finally { Stop-ProbeHost $probeHost 'enable-quit' }

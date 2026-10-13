@@ -1,0 +1,34 @@
+{
+  "upstream": {
+    "repository": "https://github.com/syncthing/syncthing",
+    "tag": "v2.1.6",
+    "annotatedTagObject": "28000330a4f4f24e03018333ab31846774c6a9a1",
+    "commit": "4461a1ce354d3990660966ad70176e00246adb61",
+    "goModule": "github.com/syncthing/syncthing",
+    "goModuleVersion": "v1.30.0-rc.1.0.20261005040355-4461a1ce354d",
+    "goModuleSum": "h1:Z48AbhLshAB1GvOnAPUl/wbvAJoQ0zSqM6xU7lJmfp0="
+  },
+  "glob": {
+    "module": "github.com/gobwas/glob",
+    "version": "v0.2.3",
+    "replacement": "github.com/calmh/glob",
+    "replacementVersion": "v0.0.0-20220615080505-1d823af5017b",
+    "commit": "1d823af5017b"
+  },
+  "normalization": {
+    "module": "golang.org/x/text",
+    "version": "v0.41.0",
+    "toolchain": "go1.27.0",
+    "unicode": "17.0.0",
+    "hostICURequired": false
+  },
+  "profiles": {
+    "windows": { "defaultCaseFold": true, "normalization": "NFC", "defaultEscape": "|", "pathSeparator": "\\" },
+    "linux": { "defaultCaseFold": false, "normalization": "NFC", "defaultEscape": "\\", "pathSeparator": "/" },
+    "android": { "defaultCaseFold": false, "normalization": "NFC", "defaultEscape": "\\", "pathSeparator": "/" },
+    "darwin": { "defaultCaseFold": true, "normalization": "NFD", "defaultEscape": "\\", "pathSeparator": "/" },
+    "ios": { "defaultCaseFold": true, "normalization": "NFD", "defaultEscape": "\\", "pathSeparator": "/" }
+  },
+  "dependencyRevisions": "go.mod and go.sum contain the complete pinned native oracle dependency set",
+  "nativeVerification": "Runtime evidence is produced by tests and is not inferred from cross-compilation or a disk case-sensitivity probe"
+}
