@@ -10,7 +10,7 @@ Rules are evaluated from top to bottom. The first match determines the result. A
 
 Paths are relative to the vault root. Patterns without a leading `/` match at the root and at any depth; a leading `/` anchors a pattern to the root. `node_modules` matches a file or directory with that name and its contents. `node_modules/` matches its contents, but not the directory itself.
 
-Blank lines are skipped. Leading and trailing whitespace is removed; spaces inside a name are preserved. A comment line starts with `//`. Comments after a pattern and `# comment` lines are not comments.
+Blank lines and repeated identical lines are skipped. Leading and trailing whitespace is removed; spaces inside a name are preserved. A comment line starts with `//`. Comments after a pattern and `# comment` lines are not comments.
 
 ## Patterns
 
@@ -40,7 +40,9 @@ Prefixes may appear in any order, each at most once: `(?i)!*.md`, `(?d)(?i)*.tmp
 #include filters/common.stignore
 ```
 
-The included file's rules are inserted at the directive's position. The main list resolves include paths from the vault root; nested includes resolve them from the containing file's directory. Patterns always remain relative to the vault root. The file must be accessible to the application; a missing or repeatedly included file is an error.
+The included file's rules are inserted at the directive's position. The main list resolves include paths from the vault root; nested includes resolve them from the containing file's directory. Patterns always remain relative to the vault root. The file must be accessible to the application; a missing file is an error.
+
+Identical lines are deduplicated globally, including `#include` directives. An exact repeated directive may therefore be skipped. Including the same file again through a different directive that was not deduplicated produces a `multiple include` error.
 
 Rule files use UTF-8. Each included file has its own escape character.
 
@@ -52,7 +54,7 @@ Windows defaults to `|`; other platforms default to `\`. Explicitly set the esca
 #escape=\
 ```
 
-Specify the directive once per file, before patterns. It must define exactly one character. With `#escape=\`, use `/` for path separators; `\{draft\}.md` matches the literal name `{draft}.md`. In the default Windows mode, the equivalent is `|{draft|}.md`. An escaped escape character represents itself.
+Specify the directive once per file, before its own patterns; `#include` directives may precede it. It must define exactly one character. With `#escape=\`, use `/` for path separators; `\{draft\}.md` matches the literal name `{draft}.md`. In the default Windows mode, the equivalent is `|{draft|}.md`. An escaped escape character represents itself.
 
 ## Allowlist
 

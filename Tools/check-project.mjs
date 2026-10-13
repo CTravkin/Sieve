@@ -24,15 +24,27 @@ async function listMarkdown(directory) {
   return result;
 }
 
+export function validateVersionMetadata(metadata, manifest, versions) {
+  const versionAssigned = Object.hasOwn(metadata, 'version');
+  if (!versionAssigned) {
+    assert.equal(Object.hasOwn(metadata, 'sieveBuild'), false, 'An unassigned version must not have a build number');
+    assert.equal(Object.hasOwn(manifest, 'version'), false, 'An unassigned version must not appear in the manifest');
+    assert.deepEqual(versions, {}, 'An unassigned version must not have release compatibility entries');
+    return { versionAssigned: false, version: null };
+  }
+  assert.match(metadata.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+  assert.equal(manifest.version, metadata.version, 'Manifest and package versions must match');
+  assert.ok(Number.isSafeInteger(metadata.sieveBuild) && metadata.sieveBuild > 0);
+  assert.equal(versions[metadata.version], manifest.minAppVersion);
+  return { versionAssigned: true, version: `${metadata.version} (${metadata.sieveBuild})` };
+}
+
 export async function checkProject() {
   const [metadata, manifest, versions, en, ru] = await Promise.all([
     readJson('package.json'), readJson('manifest.json'), readJson('versions.json'),
     readJson('src/locales/en.json'), readJson('src/locales/ru.json'),
   ]);
-  assert.match(metadata.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
-  assert.equal(manifest.version, metadata.version, 'Manifest and package versions must match');
-  assert.ok(Number.isSafeInteger(metadata.sieveBuild) && metadata.sieveBuild > 0);
-  assert.equal(versions[metadata.version], manifest.minAppVersion);
+  const versionMetadata = validateVersionMetadata(metadata, manifest, versions);
   assert.equal(manifest.id, 'sieve');
   assert.equal(manifest.isDesktopOnly, false);
   assert.equal(manifest.description, en.settings.description);
@@ -70,7 +82,7 @@ export async function checkProject() {
       linkCount++;
     }
   }
-  return { version: `${metadata.version} (${metadata.sieveBuild})`, localeKeys: Object.keys(english).length, markdownFiles: markdown.length, localLinks: linkCount };
+  return { ...versionMetadata, localeKeys: Object.keys(english).length, markdownFiles: markdown.length, localLinks: linkCount };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

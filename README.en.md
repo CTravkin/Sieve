@@ -8,6 +8,8 @@ An Obsidian plugin that excludes files and folders before vault indexing.
 
 The first version is in development. This repository currently contains translations, syntax help, requirements, and checks for those assets. The filtering engine and settings UI are not implemented yet; there is no installable release.
 
+The plugin version and build number are not assigned yet. The manifest has no `version` field and is a planning asset, not an installable manifest.
+
 ## Features
 
 The agreed scope is early filtering with full Syncthing filter syntax, detailed help, and a display name for the current vault. The interface will support English and Russian. [Requirements](Docs/Requirements.md) owns the scope and limitations.
@@ -31,6 +33,7 @@ On other platforms, use `npm run check` and `npm test`. These commands validate 
 
 ## Links
 
+- [Development plan (Russian)](Plans/Development.md)
 - [Filter syntax](Docs/Syntax.en.md)
 - [Version and build policy](Docs/Versioning.md)
 

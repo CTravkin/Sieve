@@ -5,6 +5,7 @@
 Obsidian plugin for filtering files and folders before vault indexing. This directory is a separate Git repository owned by `CTravkin/Sieve`; keep Git operations inside this repository.
 
 Read [Requirements](Docs/Requirements.md), [Versioning](Docs/Versioning.md), and the relevant [English](Docs/Syntax.en.md) or [Russian](Docs/Syntax.ru.md) syntax reference before changing behavior.
+Before starting implementation, read the [development plan](Plans/Development.md) and resolve decisions that block the selected stage.
 
 ## Implementation
 
@@ -18,5 +19,5 @@ Read [Requirements](Docs/Requirements.md), [Versioning](Docs/Versioning.md), and
 ## Verification and Delivery
 
 - Run `npm.cmd run check` and `npm.cmd test` on Windows before committing. These currently validate repository assets, not filtering or host compatibility.
-- Follow the version/build rules in [Versioning](Docs/Versioning.md). Keep commits focused and use `X.Y.Z (N)` for versioned commit prefixes.
+- The release version and build number are not assigned. Do not add placeholders or assign them automatically; Constantine will decide when versioning starts. After assignment, follow [Versioning](Docs/Versioning.md) and use `X.Y.Z (N)` for versioned commit prefixes.
 - Keep the repository private until Constantine explicitly authorizes publication. Do not create a release or change visibility as part of routine development.

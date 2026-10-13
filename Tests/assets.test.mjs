@@ -5,7 +5,8 @@ import { checkProject } from '../Tools/check-project.mjs';
 
 test('repository assets preserve the approved locale and version contracts', async () => {
   const result = await checkProject();
-  assert.match(result.version, /^\d+\.\d+\.\d+ \([1-9]\d*\)$/);
+  assert.equal(result.versionAssigned, false);
+  assert.equal(result.version, null);
   assert.ok(result.localeKeys > 0);
 });
 
