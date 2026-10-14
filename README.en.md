@@ -42,7 +42,7 @@ On other platforms, omit `.cmd` from npm commands. `check`/`test` validate asset
 
 ## Links
 
-- [Development plan (Russian)](Plans/Development.md)
+- [Development plan (Russian)](<../../Work/Plans/Sieve/2026-10-13 23-01 Разработка Sieve - План выполнения.md>)
 - [Filter syntax](Docs/Syntax.en.md)
 - [Version and build policy](Docs/Versioning.md)
 - [Private installation and upgrade (Russian)](Docs/Private-Package.md)
