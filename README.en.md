@@ -6,9 +6,9 @@ An Obsidian plugin that excludes files and folders before vault indexing.
 
 ## Status
 
-The first version is in development. The common matcher, native oracle, early runtime, per-vault settings storage, and English/Russian UI are implemented. Display names are still in progress. There is no public release.
+The first version is in development. The common matcher, native oracle, early runtime, per-vault settings storage, English/Russian UI, and vault display names are implemented. Platform and performance checks continue. There is no public release.
 
-Development version: `0.5.2 (12)`. The private runtime uses the complete matcher; the historical diagnostic probe uses a prefix classifier. Native checks use separate synthetic vaults. [Commands and verification boundaries (Russian)](Tools/TOOLS.md).
+Development version: `0.6.1 (14)`. The private runtime uses the complete matcher; the historical diagnostic probe uses a prefix classifier. Native checks use separate synthetic vaults. [Commands and verification boundaries (Russian)](Tools/TOOLS.md).
 
 ## Features
 
@@ -33,10 +33,11 @@ npm.cmd run test:oracle
 npm.cmd run test:adapters
 npm.cmd run test:settings
 npm.cmd run test:ui
+npm.cmd run test:alias
 npm.cmd run build
 ```
 
-On other platforms, omit `.cmd` from npm commands. `check`/`test` validate assets and diagnostic hooks; `typecheck`/`test:core`/`test:oracle` validate the common engine. `test:adapters`/`test:settings` validate runtime and storage models; `test:ui` validates the form model and localization. `build` creates the private package in `dist/sieve/`. Native Obsidian, system I/O, and UI need separate scenarios.
+On other platforms, omit `.cmd` from npm commands. `check`/`test` validate assets and diagnostic hooks; `typecheck`/`test:core`/`test:oracle` validate the common engine. `test:adapters`/`test:settings` validate runtime and storage models; `test:ui`/`test:alias` validate the form, localization, and names. `build` creates the private package in `dist/sieve/`. Native Obsidian, system I/O, and UI need separate scenarios.
 
 ## Links
 

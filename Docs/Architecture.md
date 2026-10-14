@@ -1,6 +1,6 @@
 # Архитектура Sieve
 
-Общий matcher, ранний runtime и интерфейс настроек реализованы; отображаемые имена еще в работе. Ниже отдельно описаны runtime и историческая диагностическая проба. Поддержка всех платформ не объявлена.
+Общий matcher, ранний runtime, интерфейс настроек и отображаемые имена реализованы. Ниже отдельно описаны runtime и историческая диагностическая проба. Поддержка всех платформ не объявлена.
 
 ## Общий matcher и oracle
 
@@ -30,7 +30,15 @@ Mobile-кандидат заменяет начальный массовый `wa
 
 `src/ui/settings-tab.ts` использует нативные controls Obsidian и различает draft/saved/active. Save проверяет правила до записи и предлагает Reload/Later без автоматической перезагрузки. Пока startup не завершен, поля и Save заблокированы; API также отклоняет раннее сохранение. Внешние изменения доставляются через публичный `Plugin.onExternalSettingsChange`; локальные правки формы сохраняются отдельно. Статусы и коды ошибок локализованы, исходные внутренние причины не выводятся. Диагностика `isRoot` отличает корневые правила UI от настоящего включенного файла `.stignore`.
 
-Справка использует те же импортируемые Markdown-файлы RU/EN, что документация, и открывается без сети. Язык выбирает `getLanguage`: только `ru` дает RU, остальные значения — EN. UI-модель, доступные имена controls, loading/dispose, invalid Save и Later проверяются отдельно от нативной геометрии и поведения приложения.
+Справка использует те же импортируемые Markdown-файлы RU/EN, что документация, и открывается без сети. Язык выбирает `getLanguage`: только `ru` дает RU, остальные значения — EN. UI-модель, доступные имена controls, loading/dispose, invalid Save и Later проверяются отдельно от нативной геометрии и поведения приложения. Windows native UI проверен на сборке 10, обновление и automatic external hook/clean-dirty hydration — адресно на сборке 12; исходные документы и пакеты сохранены.
+
+## Отображаемые имена
+
+`src/alias/projection.ts` меняет только доступные UI-поверхности: подпись, результат `getAppTitle`, drawer и native chooser двух команд. `Vault.getName`, adapter, `app.title`, пути, ID/URI и callbacks не заменяются. Имя текущего vault берется из принятой рабочей конфигурации; successful Save обновляет UI без смены active rules. Чужие configs читаются только для имени с проверкой схемы.
+
+Desktop provider в ленивом `desktop.ts` использует native IPC registry и authoritative configDir. Один snapshot/index обслуживает projection, перед dispatch выполняется одна повторная проверка. Одна projection читает до четырех configs одновременно с общим deadline; отмена/закрытие не запускает новые чтения. Начатый native Promise может завершиться позже и не применит UI. Пустые/ошибочные/недоступные имена возвращают native подпись.
+
+Drawer replay сохраняет native handler и меняет `MenuItem.titleEl` до native conversion. При изменении registry открывается свежее native меню с исходными именами. Захват `FuzzySuggestModal.prototype.open` действует только на синхронном стеке нужной команды; далее проекция ограничена ее instance. Закрытие menu/chooser/popout и unload снимают собственные references/observers/wrappers, сохраняя чужие последующие обертки. Модель покрывает native timing, paths/callbacks, Unicode/HTML, поиск и cancellation; native результаты описываются отдельно.
 
 ## Нативный runtime на Windows
 

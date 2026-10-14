@@ -7,6 +7,8 @@ import {installFilter} from './platform/lifecycle.ts';
 import type {FilterInstallation,PrivateAdapter,RuntimeApp} from './platform/contracts.ts';
 import {messages} from './i18n/index.ts';
 import {SieveSettingsTab} from './ui/settings-tab.ts';
+import {installAliases} from './alias/projection.ts';
+import type {AliasApp,AliasInstallation,AliasCapabilities} from './alias/contracts.ts';
 
 export interface PluginStatus {
   readonly status:'loading'|'pending'|'applied'|'unsupported'|'unfiltered'|'error'|'disposed';
@@ -32,6 +34,9 @@ export default class SievePlugin extends Plugin {
   private runtimeErrorNotified=false;
   private settingsTab?:SieveSettingsTab;
   private readonly listeners=new Set<()=>void>();
+  private aliases?:AliasInstallation;
+  private aliasName='';
+  getAliasCapabilities():AliasCapabilities|undefined {return this.aliases?.capabilities;}
   get savedSettings():SieveSettings|undefined {return this.service?.state.saved;}
   get activeSettings():SieveSettings|undefined {return this.runtime?.phase==='applied'?this.service?.state.active:undefined;}
   get draftSettings():SieveSettings|undefined {return this.service?.state.draft;}
@@ -49,17 +54,26 @@ export default class SievePlugin extends Plugin {
   }
   async onload():Promise<void> {
     const generation=++this.generation;this.disposed=false;this.state='loading';this.runtimeErrorNotified=false;
+    this.aliases?.dispose();this.aliases=undefined;this.aliasName='';
     this.runtime?.dispose();this.service?.dispose();this.runtime=undefined;
     this.settingsTab?.hide();this.settingsTab=new SieveSettingsTab(this.app,this);this.addSettingTab(this.settingsTab);
     const platform=hostPlatform();
     if(!platform){this.state='unsupported';new Notice(messages(getLanguage()).unsupportedVersion);return;}
     const adapter=this.app.vault.adapter;
     const privateAdapter=adapter as unknown as PrivateAdapter;
-    const reader=platform==='ios'||platform==='android'?(await import('./platform/mobile.ts')).mobileIncludeReader(privateAdapter):(await import('./platform/desktop.ts')).desktopIncludeReader(privateAdapter);
+    const mobile=platform==='ios'||platform==='android';
+    const provider=mobile?await import('./platform/mobile.ts'):await import('./platform/desktop.ts');
+    const reader=mobile?(provider as typeof import('./platform/mobile.ts')).mobileIncludeReader(privateAdapter):(provider as typeof import('./platform/desktop.ts')).desktopIncludeReader(privateAdapter);
     if(this.disposed || generation!==this.generation)return;
     this.service=new SettingsService({platform,configDir:this.app.vault.configDir,io:{exists:path=>adapter.exists(path),read:path=>adapter.read(path),write:(path,value)=>adapter.write(path,value)},readInclude:reader,onChange:()=>this.changed()});
     const startup=await this.service.startup();
     if(this.disposed || generation!==this.generation)return;
+    this.aliasName=startup.ok?this.service.state.active?.displayName??'':'';
+    this.app.workspace.onLayoutReady(()=>{
+      if(this.disposed || generation!==this.generation)return;
+      const source=mobile?(provider as typeof import('./platform/mobile.ts')).mobileAliasProvider(privateAdapter,this.app.vault.configDir):(provider as typeof import('./platform/desktop.ts')).desktopAliasProvider(privateAdapter,(this.app as unknown as AliasApp).appId,this.app.vault.configDir);
+      try{this.aliases=installAliases(this.app as unknown as AliasApp,source,()=>this.aliasName);}catch{/* Alias capabilities cannot disable filtering or settings. */}
+    });
     if(!startup.ok){this.state='unfiltered';new Notice(messages(getLanguage()).configurationError);this.changed();return;}
     this.runtime=installFilter(this.app as unknown as RuntimeApp,startup.compiled.matcher,platform,{onChange:()=>this.changed()});
     this.state=this.runtime.phase;
@@ -69,14 +83,18 @@ export default class SievePlugin extends Plugin {
   }
   async saveSettings(candidate:unknown):Promise<SaveResult> {
     if(!this.service || this.disposed || this.state==='loading')return{ok:false,error:{code:'cancelled'}};
-    return this.service.save(candidate);
+    const result=await this.service.save(candidate);
+    if(result.ok && !this.disposed){this.aliasName=this.service.state.saved?.displayName??this.aliasName;this.aliases?.refresh();}
+    return result;
   }
   setDraftSettings(candidate:SieveSettings):void {if(!this.disposed && this.state!=='loading')this.service?.setDraft(candidate);}
   reloadVault():void {if(!this.disposed)window.location.reload();}
   async onExternalSettingsChange():Promise<void> {
     if(!this.service || this.disposed)return;
     const result=await this.service.externalChange();if(this.disposed)return;
-    if(!result.ok)new Notice(messages(getLanguage()).externalError);this.changed();
+    if(!result.ok)new Notice(messages(getLanguage()).externalError);
+    else {this.aliasName=this.service.state.saved?.displayName??this.aliasName;this.aliases?.refresh();}
+    this.changed();
   }
-  onunload():void {this.disposed=true;this.generation++;this.settingsTab?.hide();this.service?.dispose();this.runtime?.dispose();this.listeners.clear();}
+  onunload():void {this.disposed=true;this.generation++;this.aliases?.dispose();this.settingsTab?.hide();this.service?.dispose();this.runtime?.dispose();this.listeners.clear();}
 }

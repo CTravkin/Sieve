@@ -18,7 +18,7 @@ const built = await build({
   platform: 'browser',
   format: 'cjs',
   target: 'es2020',
-  external: ['obsidian', 'fs', 'fs/promises', 'node:fs', 'node:fs/promises', 'path', 'node:path'],
+  external: ['obsidian', 'electron', '@electron/remote', 'fs', 'fs/promises', 'node:fs', 'node:fs/promises', 'path', 'node:path'],
   loader: { '.md': 'text' },
   legalComments: 'inline',
   outfile: path.join(output, 'main.js'),

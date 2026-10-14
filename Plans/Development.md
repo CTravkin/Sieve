@@ -1,6 +1,6 @@
 # Разработка Sieve — План выполнения
 
-Статус: Runtime проверен на Windows synthetic; UI реализован и проходит native QA, alias и benchmark впереди
+Статус: Runtime и UI проверены на Windows synthetic; alias реализован и проходит native QA, benchmark и пакет впереди
 Создан: 2026-10-13 23:01 Europe/Istanbul (UTC+03:00)
 Обновлен: 2026-10-14 Europe/Istanbul (UTC+03:00)
 Файл плана: `C:\Users\CTravkin\Projects\CJA PC\Tools\Sieve\Plans\Development.md`
@@ -389,5 +389,12 @@ git diff --check
 - Реализованы native PluginSettingTab, правила и сохранение имени, status draft/saved/active, локализованная диагностика и офлайн-справка из канонических Markdown RU/EN. Успешный Save предлагает Reload/Later; ошибка не записывает конфиг. RU выбирается только для русского Obsidian, EN для остальных.
 - Исправлены два сценария перезаписи правил: открытие формы до startup и определение чистой формы после fallback либо временно некорректной внешней правки. Loading блокирует поля и Save/API; чистая форма получает актуальный service draft, пользовательские изменения сохраняются при status/redraw. Диагностика отличает корневые правила UI от включенного файла с тем же именем `.stignore`.
 - Модель UI: 20/20; root assets/hooks: 24/24; core: 21/21; adapters: 52/52; storage: 15/15. Typecheck/check/build проходят. Два P2 закрыты независимым статическим ревью; native QA последних исправлений выполняется отдельно.
-- Native Windows build 10 после ручного доверия: RU/EN форма, офлайн-help и Escape/Tab, valid/invalid Save, одна предыдущая конфигурация и Later/Reload проверены. Последняя сборка 12 обновляет тот же собственный профиль с сохранением данных; итоговый native отчет еще готовится. Историческая identity fixture 10 не подменяется identity обновления.
+- Native Windows build 10 после ручного доверия: RU/EN форма, офлайн-help и Escape/Tab, valid/invalid Save, одна предыдущая конфигурация и Later/Reload проверены. Сборка 12 обновила тот же собственный профиль с сохранением данных; fallback и три автоматических external hook доставки с clean/dirty hydration прошли. Все 6624 документа и 15 package-файлов совпали; baseline config восстановлен, normal quit выполнен. Повторный Save на 12 отдельно не выполнялся. Историческая identity fixture 10 не подменяется identity обновления.
 - Alias всех vault в меню, repeated benchmark и приватный ZIP остаются следующими этапами. Native mobile/macOS/Linux не выполнены; работа с исходниками и моделями не меняет этот статус.
+
+## Выполнение: имена хранилищ, 0.6.1 (14)
+
+- Реализованы подпись текущего vault, заголовок, drawer всех доступных vault и два native chooser с поиском. Папка, пути, ID/URI, `getName`, app.title и native переходы сохранены; startup manager до загрузки плагина остается нативным.
+- Имена чужих vault берутся из соответствующего конфига без компиляции rules. Desktop использует verified native registry/configDir; mobile — доступный native provider и стандартный путь при отсутствии подтвержденного ID. Ошибка/недоступность дает исходную подпись.
+- Исправлены три P2 статического ревью: отмененный клик при изменении registry теперь открывает fresh native menu; snapshot/index и до четырех concurrent reads ограничивают стоимость projection; window-close освобождает документы и observers. Общий deadline и cancellation не допускают следующих batches после закрытия/отмены. Alias-модель — 33/33, UI — 20/20, adapters — 52/52, root — 24/24; source build14 заморожена.
+- Scoped re-review и native Windows alias UI выполняются независимо на той же доверенной fixture. После проверки temporary registry возвращается к одному vault для benchmark. Native других платформ остается NOT_TESTED.
