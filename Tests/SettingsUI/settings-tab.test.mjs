@@ -144,6 +144,21 @@ test('fallback, unfiltered and unsupported states are visible without claiming s
     }finally{h.tab.hide();h.plugin.onunload();}
   }
 });
+
+test('saving the fallback rules through the real service offers reload and Later preserves recovery until reopen',async()=>{
+  const h=await setup({broken:true,fallback:true});let reopened;
+  try{
+    const rules=element(h.tab.containerEl,'textarea'),save=element(h.tab.containerEl,'button','Save');const recovered={schemaVersion:1,rules:'Technical',displayName:'Recovered'};
+    rules.change('[');await save.click();assert.equal(h.writes.length,0);assert.equal(globalThis.__sieveModals.length,0);assert.equal(h.data.get('.custom/plugins/sieve/data.json'),'{');assert.equal(h.plugin.getStatus().fallback,true);
+    rules.change('Technical');await save.click();assert.deepEqual(h.plugin.savedSettings,recovered);assert.deepEqual(h.plugin.activeSettings,recovered);assert.equal(h.plugin.getStatus().fallback,true);assert.equal(h.plugin.getStatus().pendingReload,true);
+    assert.match(h.tab.containerEl.textContent,/Previous working rules are active/);assert.match(h.tab.containerEl.textContent,/full.*reopen/i);assert.doesNotMatch(h.tab.containerEl.textContent,/invalid JSON/);
+    let reloads=0;globalThis.window={location:{reload(){reloads++;}}};const offer=globalThis.__sieveModals.at(-1);assert.ok(offer?.opened,'successful recovery Save must offer reload');element(offer.contentEl,'button','Later').click();assert.equal(reloads,0);assert.equal(h.plugin.getStatus().pendingReload,true);assert.equal(h.plugin.getStatus().fallback,true);
+    const writeCount=h.writes.length;await save.click();assert.equal(h.writes.length,writeCount);element(globalThis.__sieveModals.at(-1).contentEl,'button','Later').click();assert.equal(h.plugin.getStatus().pendingReload,true);
+    assert.deepEqual(h.writes,['.custom/plugins/sieve/data.previous.json','.custom/plugins/sieve/data.json']);assert.equal([...h.data.keys()].filter(path=>path.includes('previous')).length,1);
+    h.tab.hide();h.plugin.onunload();const fresh=fakeHost();Object.assign(fresh.adapter,{exists:h.adapter.exists,read:h.adapter.read,write:h.adapter.write});reopened=new SievePlugin(fresh.app);await reopened.onload();await fresh.app.vault.load();fresh.layout();
+    assert.equal(reopened.getStatus().status,'applied');assert.equal(reopened.getStatus().fallback,false);assert.equal(reopened.getStatus().pendingReload,false);assert.deepEqual(reopened.activeSettings,recovered);assert.equal(h.writes.length,writeCount);
+  }finally{delete globalThis.window;h.tab.hide();h.plugin.onunload();reopened?.onunload();}
+});
 test('unload while save is in flight cannot open late reload or success notice',async()=>{
   const h=await setup();element(h.tab.containerEl,'textarea').change('Other');const oldWrite=h.adapter.write;let release;const delay=new Promise(resolve=>{release=resolve;});h.adapter.write=async(...args)=>{await delay;return oldWrite(...args);};
   const pending=element(h.tab.containerEl,'button','Save').click();await new Promise(resolve=>setTimeout(resolve,0));h.plugin.onunload();release();await pending;

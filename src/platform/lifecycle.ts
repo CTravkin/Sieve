@@ -9,7 +9,7 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
   let active=true;let phase:RuntimePhase='pending';let started=false;let completed=false;let listed=false;let listCompleted=false;let layout=app.workspace?.layoutReady===true;
   const restores:(()=>void)[]=[];
   const notify=():void=>{try{options.onChange?.();}catch{/* Status observers never own filesystem control flow. */}};
-  const deactivate=(next:RuntimePhase):void=>{if(!active)return;active=false;phase=next;for(const restore of restores.reverse())restore();notify();};
+  const deactivate=(next:RuntimePhase):void=>{if(!active)return;active=false;phase=next;for(const restore of restores.reverse())try{restore();}catch{/* A foreign descriptor may prevent restoration; retained own guards are inert. */}notify();};
   const dispose=():void=>deactivate('disposed');
   const result=(status:FilterInstallation['status'],reloadNeeded=false):FilterInstallation=>({get status(){return phase==='error'?'error':status;},get phase(){return phase;},get reloadNeeded(){return reloadNeeded||phase==='error';},get initialStarted(){return started;},get initialCompleted(){return completed;},get layoutReady(){return layout;},dispose});
   const mobile=platform==='android'||platform==='ios';
@@ -20,7 +20,7 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
   let projection:ReturnType<typeof installProjection>;
   let renamesInFlight=0;
   const changed=():void=>{if(active && phase!=='error' && started && completed && listed && listCompleted && layout)phase='applied';if(active)notify();};
-  const failed=():void=>{if(active){phase='error';changed();}};
+  const failed=():void=>deactivate('error');
   const decide=(real:string)=>{const path=hostClean(real);return path==='/'||within(hostKey(path),config)?{ignored:false,canSkipDir:false}:matcher.match(matchPath(path,platform));};
   const realFor=(key:string):string=>cached(key)?.realpath??key;
   const mark=(key:string,add:boolean):void=>{
@@ -46,11 +46,17 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
     if(value && typeof (value as PromiseLike<unknown>).then==='function')void Promise.resolve(value).then(finish,failed);
     else finish();return value;
   };
-  function wrap(owner:object,key:string,body:(original:HostMethod,args:unknown[])=>unknown):void {
+  function wrap(owner:object,key:string,body:(original:HostMethod,args:unknown[])=>unknown,nativeFailureFatal=true):void {
     const original=method(owner,key);const descriptor=Object.getOwnPropertyDescriptor(owner,key);
-    const wrapper:HostMethod=function(...args){return active && this===owner?body.call(this,original,args):original.apply(this,args);};
+    const wrapper:HostMethod=function(...args){
+      if(!active || this!==owner)return original.apply(this,args);
+      let nativeThrew=false;let nativeError:unknown;
+      const guardedOriginal:HostMethod=function(...values){try{return original.apply(this,values);}catch(error){nativeThrew=true;nativeError=error;throw error;}};
+      try{const value=body.call(this,guardedOriginal,args);return nativeFailureFatal?observe(value,()=>{}):value;}
+      catch(error){if(nativeFailureFatal || !nativeThrew || error!==nativeError)failed();throw error;}
+    };
     Object.defineProperty(owner,key,{configurable:true,writable:true,enumerable:descriptor?.enumerable??true,value:wrapper});
-    restores.push(()=>{if(method(owner,key)!==wrapper)return;if(descriptor)Object.defineProperty(owner,key,descriptor);else delete (owner as Record<string,unknown>)[key];});
+    restores.push(()=>{if(Object.getOwnPropertyDescriptor(owner,key)?.value!==wrapper)return;if(descriptor)Object.defineProperty(owner,key,descriptor);else delete (owner as Record<string,unknown>)[key];});
   }
   try {
     projection=installProjection(app,adapter,real=>decide(real).ignored,wrap,()=>cleanDirty(true));
@@ -81,7 +87,9 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
       if(decision.ignored && !projection.has(normalized) && (decision.canSkipDir || cached(normalized)?.type==='file')){mark(normalized,false);forget(normalized);return Promise.resolve();}
       if(!mobile && key==='reconcileFile' && decision.ignored && !projection.has(normalized))return method(adapter,'reconcileFileInternal').apply(adapter,args);
       return original.apply(adapter,args);
-    });
+    // Native reconcileFile handles inner ENOENT itself; traversal failures still
+    // reach the guarded caller. Own filtering errors always deactivate hooks.
+    },key!=='reconcileFileInternal');
     for(const key of ['reconcileFileCreation',...(mobile?['reconcileFileChanged']:[])])wrap(adapter,key,function(original,args){
       const real=typeof args[0]==='string'?args[0]:'';const normalized=typeof args[1]==='string'?args[1]:hostKey(real);
       if(decide(real).ignored){mark(normalized,false);return original.apply(adapter,args);}
@@ -103,7 +111,9 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
       let value:unknown;try{value=original.apply(adapter,args);}catch(error){finish();throw error;}
       if(value && typeof (value as PromiseLike<unknown>).then==='function')void Promise.resolve(value).then(finish,finish);else finish();
       return value;
-    });
+    // A normal denied user rename is not a filter failure. Projection callbacks
+    // and cleanup keep their own fatal-error handling; the user operation is not retried.
+    },false);
     const root=mobile?'watchAndList':'listAll';
     wrap(adapter,root,function(original,args){
       const initial=!listed;listed=true;kept.clear();counts.clear();dirty.clear();
@@ -122,7 +132,7 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
     });
     wrap(app.vault,'load',function(original,args){
       const initial=!started;started=true;let value:unknown;
-      try{value=original.apply(app.vault,args);}catch(error){phase='error';changed();throw error;}
+      try{value=original.apply(app.vault,args);}catch(error){failed();throw error;}
       return observe(value,()=>{if(initial)completed=true;changed();});
     });
     app.workspace.onLayoutReady(()=>{if(active){layout=true;changed();}});

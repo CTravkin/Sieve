@@ -95,7 +95,7 @@ export class SettingsService {
       if(sameSettings(candidate,this.saved) && sameIncludes(prepared.snapshot,this.savedSnapshot)){this.draft=candidate;this.changed();return{ok:true,changed:false,pending:this.pending};}
       if(this.working)await this.wait(this.options.io.write(this.previousPath,JSON.stringify(this.working)),deadline);
       this.check();await this.wait(this.options.io.write(this.currentPath,JSON.stringify(candidate)),deadline);
-      this.saved=candidate;this.savedSnapshot=prepared.snapshot;this.currentFingerprint=sha256(JSON.stringify(candidate));this.draft=candidate;this.pending=!sameSettings(candidate,this.active?.snapshot.settings)||!sameIncludes(prepared.snapshot,this.active?.snapshot);this.error=undefined;this.changed();return{ok:true,changed:true,pending:this.pending};
+      this.saved=candidate;this.savedSnapshot=prepared.snapshot;this.currentFingerprint=sha256(JSON.stringify(candidate));this.draft=candidate;this.pending=this.fallback||!sameSettings(candidate,this.active?.snapshot.settings)||!sameIncludes(prepared.snapshot,this.active?.snapshot);this.error=undefined;this.changed();return{ok:true,changed:true,pending:this.pending};
     }catch(error){const detail=safeError(error,'write');this.error=detail;this.changed();return{ok:false,error:detail};}
   });}
   externalChange():Promise<SaveResult> {return this.enqueue(async()=>{

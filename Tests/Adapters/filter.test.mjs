@@ -72,8 +72,81 @@ test('mutation failure rolls every earlier own hook back without filesystem effe
   host.app.vault.adapter=new Proxy(host.adapter,{defineProperty(target,key,descriptor){if(key==='listRecursive'&&fail){fail=false;throw Error('atomic failure');}return Reflect.defineProperty(target,key,descriptor);}});
   const hook=await install(host,'Technical');assert.equal(hook.status,'error');assert.deepEqual(Object.getOwnPropertyDescriptors(host.adapter),before);assert.deepEqual(extras.map(Object.getOwnPropertyDescriptors),otherBefore);assert.deepEqual(host.io,[]);
 });
-test('a synchronous initial vault-load error never claims completed or applied',async()=>{
-  const host=fakeHost();host.app.vault.load=()=>{throw Error('synthetic load failure');};const hook=await install(host,'Technical');assert.throws(()=>host.app.vault.load(),/synthetic/);host.layout();assert.equal(hook.phase,'error');assert.equal(hook.initialCompleted,false);
+function methods(host){
+  return [host.adapter,host.app.vault,host.metadataCache,host.metadataCache.uniqueFileLookup].flatMap(owner=>Object.entries(Object.getOwnPropertyDescriptors(owner)).filter(([,descriptor])=>typeof descriptor.value==='function').map(([key,descriptor])=>({owner,key,descriptor})));
+}
+function restored(before){for(const {owner,key,descriptor} of before)assert.deepEqual(Object.getOwnPropertyDescriptor(owner,key),descriptor,`${key} must retain its native descriptor`);}
+
+for(const key of ['load','listAll','listRecursive','reconcileFolderCreation'])for(const synchronous of [true,false])test(`${key} ${synchronous?'throw':'rejection'} releases own hooks, preserves the original failure and requires reopen`,async()=>{
+  const host=fakeHost();const owner=key==='load'?host.app.vault:host.adapter;const error=Error('synthetic startup failure');let calls=0;
+  owner[key]=()=>{calls++;if(synchronous)throw error;return Promise.reject(error);};
+  const before=methods(host);const sources=structuredClone(host.physical);const hook=await install(host,'Technical');
+  if(key==='load'&&synchronous)assert.throws(()=>host.app.vault.load(),value=>value===error);
+  else await assert.rejects(host.app.vault.load(),value=>value===error);
+  host.layout();assert.equal(hook.phase,'error');assert.equal(hook.status,'error');assert.equal(hook.reloadNeeded,true);assert.equal(hook.initialCompleted,false);assert.equal(calls,1);restored(before);
+  assert.ok(!host.indexed.has('Technical/secret.md'),'failure must not fabricate a full index');assert.deepEqual(host.physical,sources);
+  await host.adapter.reconcileFile('Technical/secret.md','Technical/secret.md');assert.ok(host.io.some(([,path])=>path==='Technical/secret.md'));assert.ok(host.indexed.has('Technical/secret.md'),'later native events are unfiltered');assert.equal(hook.phase,'error');hook.dispose();
+});
+
+test('a late startup rejection leaves foreign wrappers inert and blocks later successful completion',async()=>{
+  const host=fakeHost();const sources=structuredClone(host.physical);let resolveLoad,rejectList;let listCalls=0,loadCalls=0;
+  const loadValue=new Promise(resolve=>{resolveLoad=resolve;}),listValue=new Promise((_,reject)=>{rejectList=reject;});
+  host.app.vault.load=()=>{loadCalls++;return loadValue;};host.adapter.listAll=()=>{listCalls++;return listValue;};
+  const before=methods(host);const hook=await install(host,'Technical');const returnedLoad=host.app.vault.load();assert.equal(returnedLoad,loadValue);const returnedList=host.adapter.listAll();assert.equal(returnedList,listValue);
+  const retained=host.adapter.reconcileFile;const foreign=function(...args){return retained.apply(this,args);};host.adapter.reconcileFile=foreign;
+  const error=Error('late startup failure');const rejected=assert.rejects(returnedList,value=>value===error);rejectList(error);await rejected;
+  assert.equal(host.adapter.reconcileFile,foreign);restored(before.filter(entry=>entry.key!=='reconcileFile'));
+  resolveLoad('native result');assert.equal(await returnedLoad,'native result');host.layout();assert.equal(hook.phase,'error');assert.equal(hook.initialCompleted,false);assert.equal(hook.reloadNeeded,true);assert.equal(loadCalls,1);assert.equal(listCalls,1);
+  assert.equal(host.indexed.size,0);assert.deepEqual(host.physical,sources);await foreign.call(host.adapter,'Technical/secret.md','Technical/secret.md');assert.ok(host.indexed.has('Technical/secret.md'));hook.dispose();assert.equal(host.adapter.reconcileFile,foreign);
+});
+
+test('synchronous filter-body errors release hooks without retrying the native operation',async()=>{
+  const host=fakeHost();const before=methods(host);const sources=structuredClone(host.physical);const hook=await install(host,'Technical');
+  assert.throws(()=>host.adapter.listRecursiveChild('',{}),/Unsupported adapter entry signature/);
+  assert.equal(hook.phase,'error');assert.equal(hook.reloadNeeded,true);restored(before);assert.deepEqual(host.io,[]);assert.deepEqual(host.physical,sources);hook.dispose();
+});
+
+test('an asynchronous guarded child failure preserves its Promise and disables all own hooks',async()=>{
+  const host=fakeHost();const error=Error('native child failure');let reject;const value=new Promise((_,failure)=>{reject=failure;});host.adapter.listRecursiveChild=()=>value;
+  const before=methods(host);const hook=await install(host,'Technical');const returned=host.adapter.listRecursiveChild('notes','public.md');assert.equal(returned,value);
+  const rejected=assert.rejects(returned,cause=>cause===error);reject(error);await rejected;assert.equal(hook.phase,'error');restored(before);hook.dispose();
+});
+
+test('failing status observers and a foreign accessor cannot replace the original throw or prevent other restoration',async()=>{
+  const host=fakeHost();const error=Error('native load failure');host.app.vault.load=()=>{throw error;};const before=methods(host);const compiled=await compileRules('Technical',{platform:'linux'});
+  let notices=0;const hook=installFilter(host.app,compiled.matcher,'linux',{onChange(){notices++;throw Error('observer failure');}});
+  const foreignGetter=()=>{throw Error('foreign getter failure');};Object.defineProperty(host.adapter,'reconcileFile',{configurable:true,get:foreignGetter});
+  assert.throws(()=>host.app.vault.load(),cause=>cause===error);assert.equal(hook.phase,'error');assert.equal(notices,1);assert.equal(Object.getOwnPropertyDescriptor(host.adapter,'reconcileFile').get,foreignGetter);restored(before.filter(entry=>entry.key!=='reconcileFile'));hook.dispose();
+});
+
+test('failure preserves a foreign accessor returning an own wrapper and restores inherited native methods',async()=>{
+  const host=fakeHost();const error=Error('native load failure');host.app.vault.load=()=>{throw error;};
+  const inherited=host.adapter.listRecursive;delete host.adapter.listRecursive;Object.setPrototypeOf(host.adapter,{listRecursive:inherited});const before=methods(host);const hook=await install(host,'Technical');
+  const retained=host.adapter.reconcileFile;const foreignGetter=()=>retained;Object.defineProperty(host.adapter,'reconcileFile',{configurable:true,enumerable:false,get:foreignGetter});const foreign=Object.getOwnPropertyDescriptor(host.adapter,'reconcileFile');
+  assert.throws(()=>host.app.vault.load(),cause=>cause===error);assert.deepEqual(Object.getOwnPropertyDescriptor(host.adapter,'reconcileFile'),foreign);assert.equal(Object.hasOwn(host.adapter,'listRecursive'),false);assert.equal(host.adapter.listRecursive,inherited);restored(before.filter(entry=>entry.key!=='reconcileFile'));
+  await host.adapter.reconcileFile('Technical/secret.md','Technical/secret.md');assert.ok(host.indexed.has('Technical/secret.md'));assert.equal(hook.phase,'error');hook.dispose();
+});
+
+for(const asynchronous of [false,true])test(`filter completion failure preserves the native ${asynchronous?'Promise':'return value'} without retry`,async()=>{
+  const host=fakeHost();host.adapter.files.notes={type:'folder',realpath:'notes'};const nativeValue=asynchronous?Promise.resolve('native result'):{result:'native result'};let calls=0;host.adapter.listRecursive=()=>{calls++;return nativeValue;};
+  const compiled=await compileRules('!notes/public.md\nnotes',{platform:'linux'});let decisions=0;const matcher={...compiled.matcher,match(path){if(++decisions===2)throw Error('completion failure');return compiled.matcher.match(path);}};
+  const before=methods(host);const sources=structuredClone(host.physical);const hook=installFilter(host.app,matcher,'linux');const returned=host.adapter.listRecursive('notes');assert.equal(returned,nativeValue);if(asynchronous)assert.equal(await returned,'native result');
+  assert.equal(hook.phase,'error');assert.equal(hook.reloadNeeded,true);assert.equal(calls,1);restored(before);assert.deepEqual(host.physical,sources);hook.dispose();
+});
+
+for(const synchronous of [true,false])test(`ordinary rename ${synchronous?'throw':'rejection'} is neither retried nor treated as a broken filter`,async()=>{
+  const host=fakeHost();const sources=structuredClone(host.physical);const error=Error('rename denied');let attempts=0;host.adapter.rename=()=>{attempts++;if(synchronous)throw error;return Promise.reject(error);};
+  const hook=await install(host,'Technical');await host.app.vault.load();host.layout();const retained=host.indexed.get('notes/public.md');
+  if(synchronous)assert.throws(()=>host.adapter.rename('notes/public.md','Technical/secret.md'),cause=>cause===error);
+  else await assert.rejects(host.adapter.rename('notes/public.md','Technical/secret.md'),cause=>cause===error);
+  assert.equal(attempts,1);assert.equal(hook.phase,'applied');assert.equal(hook.reloadNeeded,false);assert.equal(retained.path,'notes/public.md');assert.deepEqual(host.physical,sources);
+  host.io.length=0;await host.adapter.reconcileFile('Technical/secret.md','Technical/secret.md');assert.deepEqual(host.io,[]);hook.dispose();
+});
+
+test('native reconcile ENOENT remains handled by the host without disabling a healthy filter',async()=>{
+  const host=fakeHost();const hook=await install(host,'Technical');await host.app.vault.load();host.layout();const retained=host.indexed.get('notes/public.md');host.physical.delete('notes/public.md');
+  await host.adapter.reconcileFile('notes/public.md','notes/public.md');assert.equal(retained.deleted,true);assert.equal(host.indexed.has('notes/public.md'),false);assert.equal(hook.phase,'applied');assert.equal(hook.reloadNeeded,false);
+  host.io.length=0;await host.adapter.reconcileFile('Technical/secret.md','Technical/secret.md');assert.deepEqual(host.io,[]);hook.dispose();
 });
 test('partial managed mobile failure restores ordinary bulk only after reporting unfiltered recovery',async()=>{
   const host=fakeHost(true);const readdir=host.adapter.fs.readdir;host.adapter.fs.readdir=async p=>{if(p==='/vault/notes')throw Error('provider failure');return readdir(p);};const bulk=host.adapter.fs.watchAndStatAll;let phaseAtBulk;

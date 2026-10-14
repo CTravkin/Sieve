@@ -35,6 +35,17 @@ test('fallback uses captured binary includes even after live dependency fails',a
   assert.equal(recovered.ok,true);assert.equal(recovered.fallback,true);assert.equal(recovered.compiled.matcher.match('private').ignored,true);
   assert.equal(replacement.state.active.rules,'#include ../rules');assert.ok(!JSON.stringify(replacement.state.error).includes('secret-dependency'));
 });
+
+test('recovery Save of the active fallback snapshot stays pending until a fresh valid startup',async()=>{
+  const settings=config('#include rules','Recovered');const snapshot={schemaVersion:1,settings,includes:[{path:'rules',contentBase64:btoa('Technical')}]};
+  const io=memory({[current]:'{',[previous]:JSON.stringify(snapshot)});const service=new SettingsService(options(io,async()=> 'Technical'));
+  assert.equal((await service.startup()).fallback,true);service.confirmActive();assert.equal(service.state.pending,true);
+  assert.equal((await service.save(config('['))).ok,false);assert.deepEqual(io.writes,[]);assert.equal(io.files.get(current),'{');assert.equal(service.state.fallback,true);
+  const saved=await service.save(settings);assert.equal(saved.ok,true);assert.equal(saved.changed,true);assert.equal(saved.pending,true);assert.equal(service.state.pending,true);assert.equal(service.state.fallback,true);assert.equal(service.state.error,undefined);assert.deepEqual(service.state.active,settings);
+  assert.deepEqual(io.writes,[previous,current]);assert.deepEqual(JSON.parse(io.files.get(previous)),snapshot);assert.deepEqual(JSON.parse(io.files.get(current)),settings);assert.equal([...io.files.keys()].filter(path=>path.includes('previous')).length,1);
+  const unchanged=await service.save(settings);assert.equal(unchanged.changed,false);assert.equal(unchanged.pending,true);assert.deepEqual(io.writes,[previous,current]);service.dispose();
+  const reopened=new SettingsService(options(io,async()=> 'Technical'));const startup=await reopened.startup();assert.equal(startup.ok,true);assert.equal(startup.fallback,false);assert.equal(reopened.state.fallback,false);assert.equal(reopened.state.pending,false);assert.equal(reopened.state.error,undefined);assert.deepEqual(reopened.state.active,settings);reopened.dispose();
+});
 test('invalid JSON/candidate and backup failure never overwrite current or expose raw source',async()=>{
   const io=memory({[current]:'{"password":"top-secret"'});const broken=new SettingsService(options(io));
   assert.equal((await broken.startup()).ok,false);assert.ok(!JSON.stringify(broken.state).includes('top-secret'));
