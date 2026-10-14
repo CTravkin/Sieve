@@ -1,7 +1,7 @@
 {
   "id": "sieve",
   "name": "Sieve",
-  "version": "0.3.0",
+  "version": "0.4.5",
   "minAppVersion": "1.14.4",
   "description": "Excludes files and folders before vault indexing",
   "author": "Constantine Travkin",

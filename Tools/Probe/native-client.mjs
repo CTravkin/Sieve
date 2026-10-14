@@ -52,6 +52,13 @@ export async function connectNative(port = 9229) {
         const profile = require('@electron/remote').app.getPath('userData').replaceAll('\\\\','/');
         const vaultPath = app.vault.adapter.basePath.replaceAll('\\\\','/');
         if (!profile.startsWith(root) || !vaultPath.startsWith(root)) throw new Error('Only generated Sieve fixtures are allowed');
+        const real = async path => {
+          const resolved = (await require('fs').promises.realpath(path)).replaceAll('\\\\','/');
+          const trimmed = resolved.endsWith('/') ? resolved.slice(0,-1) : resolved;
+          return require('process').platform === 'win32' ? trimmed.toLowerCase() : trimmed;
+        };
+        const realRoot = (await real(root)) + '/';
+        if (!(await real(profile)).startsWith(realRoot) || !(await real(vaultPath)).startsWith(realRoot)) throw new Error('Fixture junction or symlink escapes allowed root');
         ${body}
       })()`;
       return new Promise((resolve, reject) => {

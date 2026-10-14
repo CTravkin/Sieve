@@ -1,5 +1,25 @@
 # Инструменты Sieve
 
+## Приватный runtime
+
+`npm.cmd run build` собирает реальный плагин из `src/main.ts` в `dist/sieve/`. Manifest, идентификация сборки, upstream notices, лицензии и covered source копируются вместе с main.js. Пакет не публикуется автоматически. Сборка проверяет, что внешние filesystem imports относятся только к desktop provider.
+
+`node Tools/Runtime/fixture.mjs 1000` создает шесть отдельных хранилищ в `Local/.temp/SieveProbe/Runtime-<UTC timestamp>/`. Baseline/Filtered/Descendant используют полный matcher; First/Last проверяют порядок с отдельным observer, Alternate — `.sieve-config`. Observer ограничен сгенерированными vault/profile и не входит в пакет плагина.
+
+`Tools/Runtime/run-desktop.ps1 -RunDirectory <run> -Variant Filtered` сначала включает community plugins только в своем профиле, затем полностью переоткрывает vault и сохраняет startup trace. Для следующих запусков этого же профиля есть `-AlreadyEnabled`. Выбирается отдельный user-data-dir; debugger доступен только на 127.0.0.1:9229. Существующий Obsidian или занятый порт запрещают запуск, чужие процессы не останавливаются.
+
+При alternate configDir запускатель сначала сохраняет override и переоткрывает профиль, затем включает плагин уже из выбранного каталога. Activation допускает одно переподключение после нативного reload renderer и проверяет фактическую загрузку перед штатным выходом.
+
+`node Tools/Runtime/verify-fixture.mjs <run> <new-report.json>` проверяет SHA-256 всех исходных документов в вариантах. Файл inventory и marker run.json не изменяются. Временные профили/документы очищаются после завершения всей разработки, когда компактные доказательства уже сохранены.
+
+`node Tools/Runtime/events.mjs <new-report.json>` работает с уже открытым Filtered fixture. Проверяет нативный редактор с положительным контролем autosave, переносы скрыть→скрыть→показать, Unicode/NBSP и реальное удаление открытого скрытого файла. Тест удаляет только собственные имена. Загрузка профиля и CDP дополнительно проверяют realpath, чтобы junction/symlink не вывел тест за границы fixture.
+
+`Tools/Runtime/benchmark.ps1 -RunDirectory <run> -Samples 5` чередует пять Baseline/Filtered запусков уже включенных профилей. Сохраняет I/O, vault.load, renderer layout, CPU и memory после layout. Это полное переоткрытие приложения с прогретыми OS/metadata caches; UI Reading files и отдельный compile timer не измеряются. Сумма максимальной памяти отдельных процессов не является одновременным пиком всего приложения.
+
+`Tools/package-private.ps1` упаковывает только inventory проверенного `dist/sieve`, сверяет каждый hash до и после ZIP, требует совпадающий committed Git SHA и чистую сборку. Запись только в `dist/`, существующий ZIP не перезаписывается. Измененная installable source-сборка требует роста версии и номера; неизмененная повторная сборка сохраняет их.
+
+Счетчики observer относятся к I/O адаптера после его загрузки; интервал vault.load не является UI «Reading files» или полным cold-start benchmark. Truncated/incomplete trace не превращается в нулевой счетчик. Native mobile и другие desktop-приложения проверяются отдельно.
+
 ## Проба раннего обхода
 
 `Probe/` создает диагностический плагин и отдельные синтетические хранилища. Проба исключает заданные префиксы, а не разбирает синтаксис Syncthing. Полный matcher остается этапом 2. Фильтр пробы предназначен для desktop-адаптера; mobile возвращает unsupported, пока его контракт не исследован отдельно.

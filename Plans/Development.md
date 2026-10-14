@@ -1,6 +1,6 @@
 # Разработка Sieve — План выполнения
 
-Статус: Этап 2 проверен, следующий этап — runtime; непроверенные платформенные гейты сохраняются
+Статус: Runtime проверен на Windows synthetic; UI в разработке, непроверенные платформенные гейты сохраняются
 Создан: 2026-10-13 23:01 Europe/Istanbul (UTC+03:00)
 Обновлен: 2026-10-14 Europe/Istanbul (UTC+03:00)
 Файл плана: `C:\Users\CTravkin\Projects\CJA PC\Tools\Sieve\Plans\Development.md`
@@ -374,3 +374,12 @@ git diff --check
 - Desktop prefix-проба расширена: 10 native событий, сохранение через удержанные ссылки после rename файла/папки, две очередности плагинов, alternate configDir, 6624 неизменных документа. Проверка UI редактора и полного matcher в Obsidian относится к следующим этапам.
 - Linux-архив финального среза: SHA-256 `47907982fb17a1df7435bee02ba665f3c98df23eb6850c4689e5bc7c526de7e6`, log `f2c3cdb79a7ca46fc4fd33499dfb0634390af2f91e4c55ce3fa88431089dcc27`. Собственные remote temp-каталоги удалены. Полезные локальные fixtures/copies пока оставлены до завершения всей разработки по уточнению Constantine; затем сохранить компактные отчеты и удалить принадлежащие задаче временные данные.
 - Следующий этап — ранние platform adapters и bootstrap с правилами из конфига. UI, alias, native regression/performance и приватный пакет остаются в плане. Пользовательские vault, установка приложения, sync rules и публичность не менялись; push/release не выполнялись.
+
+## Выполнение: ранний runtime, 0.4.5 (9)
+
+- Общий matcher подключен к async bootstrap до первого Vault.load. Vault-local `data.json`, один `data.previous.json` с байтами includes, разделение draft/saved/active, timeout, fallback и явный unfiltered/unsupported реализованы. Позднее включение требует переоткрытия.
+- Нативный Windows API 1.14.4: шесть startup-вариантов, две очередности plugins и alternate configDir. Полное исключение Technical: index 106, metadata 103, Technical I/O адаптера 0. Разрешенный потомок сохраняет ровно нужные контейнеры и файл; conservative CanSkipDir соответствует общему matcher.
+- 13 нативных событий прошли, включая actual Markdown editor, dirty autosave, удержанные файлы/потомки после rename, NBSP/NFD и реальное удаление скрытого открытого файла. Дополнительные callbacks/FileExplorer, полный цикл папки и конечные FIFO/ABA cache/content/links проверены отдельно. Новое hidden external modify не запускает metadata readBinary; operational объект сохраняет stat.
+- Исправлены потеря dirty editor, удержанные пути при повторных rename, временная публикация скрытого destination, stat/cache при external modify, stale FileExplorer key и постановка metadata-задачи для скрытого modify. Источники адаптера и слушателей сверены с точной установленной версией; модель насчитывает 52 теста, storage — 14.
+- Mobile managed scan и resume остаются кандидатами по источникам и модели. Нативные устройства и Obsidian на Linux/macOS не проверены. Это не блокирует разрешенную разработку, но не дает общего platform go.
+- UI начат в отдельной исходной сборке, alias всех vault в меню, benchmark и финальная приватная упаковка еще впереди. При общей очистке сохранить компактные доказательства и убрать собственные fixtures/caches/profiles; рабочие vault и общие caches не трогать.

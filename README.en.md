@@ -6,9 +6,9 @@ An Obsidian plugin that excludes files and folders before vault indexing.
 
 ## Status
 
-The first version is in development. The common matcher and native oracle are implemented; a separate Windows diagnostic probe checks early traversal. Plugin integration, settings, and display names are still in progress; there is no installable release.
+The first version is in development. The common matcher, native oracle, early runtime, and per-vault settings storage are implemented. Settings UI and display names are still in progress. There is no public release.
 
-Development version: `0.3.0 (3)`. The diagnostic probe is only for disposable test vaults and uses a prefix classifier. [Commands and verification boundaries (Russian)](Tools/TOOLS.md).
+Development version: `0.4.5 (9)`. The private runtime uses the complete matcher; the historical diagnostic probe uses a prefix classifier. Native checks use separate synthetic vaults. [Commands and verification boundaries (Russian)](Tools/TOOLS.md).
 
 ## Features
 
@@ -30,9 +30,12 @@ npm.cmd test
 npm.cmd run typecheck
 npm.cmd run test:core
 npm.cmd run test:oracle
+npm.cmd run test:adapters
+npm.cmd run test:settings
+npm.cmd run build
 ```
 
-On other platforms, omit `.cmd` from npm commands. `check`/`test` validate assets and diagnostic hooks; `typecheck`/`test:core`/`test:oracle` validate the common engine. Native Obsidian, system I/O, and UI need separate scenarios.
+On other platforms, omit `.cmd` from npm commands. `check`/`test` validate assets and diagnostic hooks; `typecheck`/`test:core`/`test:oracle` validate the common engine. `test:adapters`/`test:settings` validate runtime and storage models. `build` creates the private package in `dist/sieve/`. Native Obsidian, system I/O, and UI need separate scenarios.
 
 ## Links
 

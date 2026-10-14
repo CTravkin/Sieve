@@ -23,6 +23,11 @@
     "includeReadError": "Could not read file {path}",
     "includeRepeatedError": "File {path} is included more than once",
     "escapePositionError": "The #escape directive must precede filter rules",
-    "unsupportedVersion": "This version of Obsidian does not support Sieve filtering"
+    "unsupportedVersion": "This version of Obsidian does not support Sieve filtering",
+    "configurationError": "Could not load Sieve settings. The vault will open without filtering.",
+    "fallbackUsed": "Could not load the saved rules. The previous working rules will be used.",
+    "runtimeError": "Could not complete Sieve filtering. Reopen the vault.",
+    "saveError": "Could not save Sieve settings",
+    "externalError": "Could not validate the saved Sieve settings"
   }
 }

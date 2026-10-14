@@ -13,6 +13,11 @@ $probeVariant = $probeDefinition.vaults | Where-Object name -EQ $Variant
 foreach ($probeTarget in @($probeVariant.vault, $probeVariant.profile)) {
     if (-not [IO.Path]::GetFullPath($probeTarget).StartsWith($probeRun + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Fixture path escapes the selected run' }
 }
+$probePhysicalCheck = @'
+const fs=require('fs');const real=p=>{const value=fs.realpathSync(p).replaceAll('\\','/');return process.platform==='win32'?value.toLowerCase():value;};const [repo,root,run,...targets]=process.argv.slice(1).map(real);if(!root.startsWith(repo+'/')||!run.startsWith(root+'/')||!targets.every(p=>p.startsWith(run+'/')))throw Error('Fixture junction or symlink escapes selected run');process.stdout.write('PASS');
+'@
+$probeBoundary = & node.exe -e $probePhysicalCheck $probeRepo $probeAllowedRoot $probeRun $probeVariant.vault $probeVariant.profile
+if ($LASTEXITCODE -ne 0 -or $probeBoundary -ne 'PASS') { throw 'Physical fixture boundary failed before app launch' }
 $probeReports = Join-Path $probeRun 'Reports'
 New-Item -ItemType Directory -Path $probeReports -Force | Out-Null
 $probeStamp = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH-mm-ss-fffZ')
