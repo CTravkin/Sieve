@@ -1,7 +1,7 @@
 {
   "name": "sieve",
-  "version": "0.6.2",
-  "sieveBuild": 15,
+  "version": "0.6.3",
+  "sieveBuild": 16,
   "private": true,
   "description": "Excludes files and folders before vault indexing",
   "type": "module",
@@ -22,7 +22,9 @@
     "test:adapters": "node --test Tests/Adapters/*.test.mjs",
     "test:settings": "node --test Tests/Settings/*.test.mjs",
     "test:ui": "node --test Tests/SettingsUI/*.test.mjs Tests/I18n/*.test.mjs",
-    "test:alias": "node --test Tests/Alias/*.test.mjs"
+    "test:alias": "node --test Tests/Alias/*.test.mjs",
+    "test:benchmark": "node --test Tests/RuntimeBenchmark/*.test.mjs",
+    "test:regression": "node --test Tests/*.test.mjs Tests/Adapters/*.test.mjs Tests/Settings/*.test.mjs Tests/SettingsUI/*.test.mjs Tests/I18n/*.test.mjs Tests/Alias/*.test.mjs Tests/RuntimeBenchmark/*.test.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

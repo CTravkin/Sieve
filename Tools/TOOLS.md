@@ -79,3 +79,24 @@ node.exe Tools/Probe/verify-fixture.mjs <run-directory> <new-hash-report.json>
 На iPhone/iPad пакет можно установить только в отдельный тестовый vault. Команда Sieve `Export probe report` сохраняет отчет в `<configDir>/plugins/sieve/probe-report.json`. Пока это отчет о жизненном цикле и неподдержанном desktop-адаптере, а не доказательство mobile pruning. Native watcher/I/O, resume и provider требуют отдельной проверки.
 
 Примерные пути в командах подставлять из `run.json`; не подставлять пользовательские vault. Проверка хешей inventory и полный platform gate обязательны до общего go. Автоматические тесты hooks не заменяют нативный trace.
+
+## Benchmark в одном доверенном профиле
+
+`Tools/Runtime/benchmark-same-vault.ps1` предназначен для Task 6 после native gate Task 5. Использует только `Filtered` vault/profile выбранного generated runtime run; community plugins должны быть уже доверены и включены вручную. Baseline сохраняет включенный Sieve с пустыми rules, Filtered — `Technical`; у обоих режимов пустой alias. Инструмент не включает restricted mode, не обходит trust и не автоматизирует reload-диалог.
+
+```powershell
+& .\Tools\Runtime\benchmark-same-vault.ps1 -RunDirectory <runtime-run> -ExpectedIdentityPath <current-dist-or-installed-identity.json> -Samples 5 -NewTechnicalFiles 10000
+node.exe --test Tests/RuntimeBenchmark/*.test.mjs
+```
+
+`ExpectedIdentityPath` обязателен: текущие installed identity и hashes сверяются с явной identity и актуальным `dist/sieve`; историческая identity из `run.json` не подменяется после upgrade. До запуска проверяются lexical/physical границы, exact vault/profile, original source hashes, порядок observer/Sieve, отсутствие другого Obsidian и свободный 9229. Native preflight должен подтвердить applied working settings без fallback/pending reload до добавления файлов.
+
+До Start-Process фиксируются verified paths и уникальный launch nonce; PID/creation time добавляются сразу после запуска. Неизменяемая привязка остается в памяти контроллера и связывается с аргументом `--sieve-benchmark-launch`. Отдельный quit-only CDP путь сверяет OS PID/creation time/executable/profile/владельца порта и renderer ancestry, затем фактический `app.getPath('userData')`. Он не читает текущие marker/run/registry/evidence/source и не ожидает vault adapter/plugins/layout. Неверная привязка сохраняет чужой процесс; trust не меняется.
+
+После штатного выхода добавляются только новые `Technical/Bench-<phase>/group-*/hidden-*.md`; суммарный source corpus ограничен 20000 файлами. Новые файлы остаются до отдельной очистки fixture. Исходные `inventory.json` и `run.json` сохраняются. `Reports/Benchmark-<UTC>/` содержит extension plan, отдельные original/added/phase inventories, снимки identity/source/observer/instrumentation/rules/config и ровно заданные alternating Baseline/Filtered пары. Сводка читает только собственную фазу, а не последние отчеты по маске.
+
+Каждая пара — полный restart того же приложения и профиля с прогретым OS cache и сохраненным metadata cache. После расширения корпуса выполняется один отдельный warm-up каждого режима; warm-up отчеты не входят в измеряемые пары. Rules меняются через `plugin.saveSettings`, затем normal quit. Metadata ожидается по реальному `app.metadataCache.isCacheClean()` с ограниченным таймаутом; timestamp первой clean observation берется из renderer `performance.now`. Incomplete/dropped trace, timeout, drift identity/source/corpus, неравный ожидаемый index/metadata или менее пяти пар не дают PASS. Trace cap не меняется; overflow требует отдельного изменения owned observer с новой доказанной instrumentation identity.
+
+CPU и working set снимаются сразу после возврата native report. Полный hash census выполняется после снимка и normal quit, отдельным `complete-sample`; prelaunch census намеренно прогревает OS cache. Metrics содержат phase/pair/mode/sampleKind, startup report digest, launch nonce/PID tree, metadata UTC и monotonic timestamp, время начала/конца snapshot и delta. Валидатор отклоняет неправильную привязку, snapshot до metadata, неверную последовательность census и окно больше 5000 ms. Delta/duration — диагностика инструмента, не ускорение приложения.
+
+Сумма индивидуальных peak working sets не является одновременным пиком приложения. OS I/O trace, rules compile и UI Reading files остаются `null`; OS-cold запуск не заявляется. `summary.json` означает валидность сопоставимых данных, а не прохождение всех платформенных гейтов Task 6. После API restore выполняется новый полный reopen и подтверждение original saved/active settings, applied status без fallback/pending и clean metadata; без `restore-confirmation.json` PASS запрещен. Сравниваются значения и raw SHA до/после, поскольку штатная сериализация может изменить байты JSON. При сбое выполняется попытка restore и normal quit без forced kill; неподтвержденный recovery не выдается за восстановленный working run.
