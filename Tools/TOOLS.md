@@ -1,5 +1,11 @@
 # Инструменты Sieve
 
+## Приватная упаковка
+
+`npm.cmd run build` создает `dist/sieve/` с `INSTALL.md`, notices, covered source и `identity.json`. Инструкция входит в source fingerprint и inventory. После локального commit повтори build того же исходного состояния, затем запусти `& .\Tools\package-private.ps1`; ZIP сохраняется в `dist/` без публикации.
+
+Упаковщик требует чистый Git и совпадающий SHA сборки, проверяет каждый файл и физические пути до записи, запрещает reparse и перезапись существующего ZIP. Прочитанный ZIP повторно проверяется по inventory. `npm.cmd run test:package` проверяет реальные Windows junction; это отдельная проверка границ, не native установка плагина.
+
 ## Приватный runtime
 
 `npm.cmd run build` собирает реальный плагин из `src/main.ts` в `dist/sieve/`. Manifest, идентификация сборки, upstream notices, лицензии и covered source копируются вместе с main.js. Пакет не публикуется автоматически. Сборка проверяет, что внешние filesystem imports относятся только к desktop provider.

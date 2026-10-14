@@ -1,6 +1,6 @@
 # Разработка Sieve — План выполнения
 
-Статус: Runtime и UI проверены на Windows synthetic; alias реализован и проходит native QA, benchmark и пакет впереди
+Статус: Код и инструменты приватного кандидата реализованы; часть Windows native проверок пройдена, остальные UI и повторные запуски отложены по ограничению пользователя
 Создан: 2026-10-13 23:01 Europe/Istanbul (UTC+03:00)
 Обновлен: 2026-10-14 Europe/Istanbul (UTC+03:00)
 Файл плана: `C:\Users\CTravkin\Projects\CJA PC\Tools\Sieve\Plans\Development.md`
@@ -398,3 +398,11 @@ git diff --check
 - Имена чужих vault берутся из соответствующего конфига без компиляции rules. Desktop использует verified native registry/configDir; mobile — доступный native provider и стандартный путь при отсутствии подтвержденного ID. Ошибка/недоступность дает исходную подпись.
 - Исправлены три P2 статического ревью: отмененный клик при изменении registry теперь открывает fresh native menu; snapshot/index и до четырех concurrent reads ограничивают стоимость projection; window-close освобождает документы и observers. Общий deadline и cancellation не допускают следующих batches после закрытия/отмены. Alias-модель — 33/33, UI — 20/20, adapters — 52/52, root — 24/24; source build14 заморожена.
 - Scoped re-review и native Windows alias UI выполняются независимо на той же доверенной fixture. После проверки temporary registry возвращается к одному vault для benchmark. Native других платформ остается NOT_TESTED.
+
+### Приватный кандидат 0.6.4 (17)
+
+- Добавлены scoped runtime/fallback регрессии: общая ошибка освобождает собственные hooks без повторения файловых операций; исправление fallback через Save сохраняет предложение переоткрытия. Независимое ревью APPROVE_WITH_NOTES, 68 focused и 139 связанных модельных тестов прошли.
+- Native alias 14 частично проверен: drawer, обе команды поиска, одинаковые basename, literal HTML/Unicode, invalid/blank fallback, Save/Later и сохранение ID/paths/callbacks. Полный native gate не закрыт. Конфиги и single-vault registry восстановлены, source/package/ASAR integrity прошел, процесс и debugger завершены.
+- Пользователь просит продолжать без мыши и самостоятельно проверить UI позже. Native restart без захвата фокуса не подтвержден; новые запуски и пять измеряемых пар отложены. Benchmark tools проходят 22 негативные/контрактные проверки, общий regression набор — 185 тестов.
+- Private packer проверяет чистый committed SHA, inventory, физические границы и ZIP readback. INSTALL, notices, licenses и build config входят в fingerprint; 17 package tests прошли. Фактическая упаковка и финальная очистка выполняются после локального коммита. Native clean-install/upgrade новой сборки и другие платформы остаются NOT_TESTED.
+- Публичность, лицензия и release-version не назначены; push/release и установка в рабочий vault не выполнялись.

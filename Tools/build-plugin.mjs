@@ -35,6 +35,10 @@ async function sourceTree(directory) {
 }
 await sourceTree('src');
 sourceFiles.add('Tools/build-plugin.mjs');
+sourceFiles.add('Docs/Private-Package.md');
+sourceFiles.add('THIRD-PARTY-NOTICES.md');
+sourceFiles.add('tsconfig.json');
+await sourceTree('Tools/Oracle/licenses');
 try { await readFile(path.join(root, 'styles.css')); sourceFiles.add('styles.css'); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
 const sourceDigest = createHash('sha256').update(JSON.stringify(metadata.devDependencies));
@@ -63,6 +67,7 @@ for (const [file, input] of Object.entries(built.metafile.inputs)) {
 }
 for (const file of built.outputFiles) await writeFile(file.path, file.contents);
 await writeFile(path.join(output, 'manifest.json'), await readFile(path.join(root, 'manifest.json')));
+await writeFile(path.join(output, 'INSTALL.md'), await readFile(path.join(root, 'Docs/Private-Package.md')));
 if (sourceFiles.has('styles.css')) await writeFile(path.join(output, 'styles.css'), await readFile(path.join(root, 'styles.css')));
 else { try { await unlink(path.join(output, 'styles.css')); } catch (error) { if (error.code !== 'ENOENT') throw error; } }
 const notices = (await readFile(path.join(root, 'THIRD-PARTY-NOTICES.md'), 'utf8')).replaceAll('Tools/Oracle/licenses/', 'licenses/');
@@ -77,7 +82,7 @@ for (const name of await readdir(path.join(root, 'src/core'))) {
   if (name.endsWith('.ts')) await writeFile(path.join(output, 'src/core', name), await readFile(path.join(root, 'src/core', name)));
 }
 const hash = async file => createHash('sha256').update(await readFile(path.join(output, file))).digest('hex');
-const files = ['main.js', 'manifest.json', 'THIRD-PARTY-NOTICES.md'];
+const files = ['main.js', 'manifest.json', 'INSTALL.md', 'THIRD-PARTY-NOTICES.md'];
 if (sourceFiles.has('styles.css')) files.push('styles.css');
 for (const name of await readdir(path.join(root, 'Tools/Oracle/licenses'))) files.push(`licenses/${name}`);
 for (const name of await readdir(path.join(root, 'src/core'))) if (name.endsWith('.ts')) files.push(`src/core/${name}`);
