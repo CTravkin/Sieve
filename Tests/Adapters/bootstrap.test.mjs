@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {loadRuntime} from '../Fixtures/load-runtime.mjs';
 import {fakeHost} from '../Fixtures/host-adapter.mjs';
-const sdk=`export class Plugin{constructor(app){this.app=app;}} export const Platform={isDesktopApp:true,isWin:false,isMacOS:false,isLinux:true}; export function getLanguage(){return globalThis.__sieveTestLanguage||'en';} export class Notice{constructor(message){(globalThis.__sieveTestNotices??=[]).push(message);}}`;
+import {uiSdk as sdk} from '../Fixtures/ui-host.mjs';
 const {default:SievePlugin}=await loadRuntime('main',sdk);
 function configured(rules='Technical'){
   const host=fakeHost();const path='.custom/plugins/sieve/data.json';const data=new Map([[path,JSON.stringify({schemaVersion:1,rules,displayName:'Demo'})]]);const writes=[];

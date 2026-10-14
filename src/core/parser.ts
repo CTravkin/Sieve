@@ -49,9 +49,8 @@ export async function parseRules(text: string, context: CompileContext): Promise
   const patterns: CompiledPattern[] = []; const dependencies: IncludeDependency[] = [];
   const initialRoot = context.root === undefined ? (context.platform === 'windows' ? 'C:/__sieve_virtual_root__' : '/__sieve_virtual_root__') : joinPath(context.platform, context.root);
   let scopeCount = 0;
-  const fail = (source: string, line: number, code: Diagnostic['code'], reason: string): never => { throw new RuleError(Object.freeze({ source, line, code, reason })); };
-
-  async function parse(contents: string | Uint8Array, source: string, includeSource: string, scopeRoot: string, scope: number): Promise<void> {
+  async function parse(contents: string | Uint8Array, source: string, includeSource: string, scopeRoot: string, scope: number,isRoot:boolean): Promise<void> {
+    const fail = (source: string, line: number, code: Diagnostic['code'], reason: string): never => { throw new RuleError(Object.freeze({ source, line, code, reason, isRoot })); };
     const lines = scanLines(contents);
     const oversized = lines.findIndex(line => line.bytes >= 65536);
     if (oversized !== -1) fail(source, oversized + 1, 'line-too-long', 'bufio.Scanner: token too long');
@@ -103,7 +102,7 @@ export async function parseRules(text: string, context: CompileContext): Promise
         }
         seenFiles.add(identity);
         dependencies.push(Object.freeze({ path, revision: sha256(content!) }));
-        await parse(content!, path, childName, childRoot, childScope);
+        await parse(content!, path, childName, childRoot, childScope,false);
       } else {
         try {
           if (line.endsWith('/**')) patterns.push(...parseLine(line, context));
@@ -116,6 +115,6 @@ export async function parseRules(text: string, context: CompileContext): Promise
       }
     }
   }
-  await parse(text, '.stignore', '.stignore', initialRoot, 0);
+  await parse(text, '.stignore', '.stignore', initialRoot, 0,true);
   return { patterns: Object.freeze(patterns), dependencies: Object.freeze(dependencies) };
 }

@@ -7,7 +7,7 @@ export async function loadRuntime(name, obsidian) {
   const { build } = await import('esbuild');
   const result = await build({
     entryPoints:[fileURLToPath(new URL(`../../src/${name}.ts`,import.meta.url))],
-    bundle:true,write:false,format:'esm',platform:'browser',target:'es2020',
+    bundle:true,write:false,format:'esm',platform:'browser',target:'es2020',loader:{'.md':'text'},
     plugins:obsidian?[{name:'test-host',setup(builder){builder.onResolve({filter:/^obsidian$/},()=>({path:'obsidian',namespace:'fixture'}));builder.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:obsidian,loader:'js'}));}}]:[],
   });
   const directory=fileURLToPath(new URL('../../Local/.temp/Development/2026-10-14/runtime-tests/',import.meta.url));

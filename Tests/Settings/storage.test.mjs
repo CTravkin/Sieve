@@ -11,6 +11,13 @@ function memory(initial={}) {
 const options=(io,readInclude)=>({io,configDir:'.custom',platform:'linux',readInclude});
 const current='.custom/plugins/sieve/data.json'; const previous='.custom/plugins/sieve/data.previous.json';
 
+test('sanitized settings diagnostics preserve root provenance without retaining parser reason',async()=>{
+  const io=memory();const service=new SettingsService(options(io,async()=> '['));await service.startup();
+  const root=await service.save(config('['));const included=await service.save(config('#include .stignore'));
+  assert.equal(root.ok,false);assert.equal(included.ok,false);assert.equal(root.error.diagnostics[0].source,'.stignore');assert.equal(included.error.diagnostics[0].source,'.stignore');
+  assert.equal(root.error.diagnostics[0].isRoot,true);assert.equal(included.error.diagnostics[0].isRoot,false);assert.deepEqual(io.writes,[]);assert.doesNotMatch(JSON.stringify(included),/unexpected end|invalid pattern/);
+});
+
 test('unchanged startup/save writes no backup; changed save keeps active independent from saved/draft',async()=>{
   const io=memory({[current]:JSON.stringify(config('private'))});const service=new SettingsService(options(io));
   const startup=await service.startup();assert.equal(startup.ok,true);service.confirmActive();

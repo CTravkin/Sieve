@@ -74,6 +74,23 @@ test('include failures retain source file and one-based line diagnostics', async
   assert.equal(result.matcher, undefined);
 });
 
+test('diagnostic root provenance distinguishes an included .stignore with the same source and line',async()=>{
+  const root=await compileRules('[',{platform:'linux'});
+  const included=await compileRules('#include .stignore',{platform:'linux',readInclude:async()=> '['});
+  assert.equal(root.ok,false);assert.equal(included.ok,false);
+  const a=root.diagnostics[0],b=included.diagnostics[0];
+  for(const key of ['source','line','code','reason'])assert.equal(a[key],b[key]);
+  assert.equal(a.isRoot,true);assert.equal(b.isRoot,false);
+  for(const [rules,files,source,isRoot] of [
+    ['// header\n#include missing',{},'.stignore',true],
+    ['#include .stignore',{'.stignore':'// header\n#include missing'},'.stignore',false],
+    ['#include filters/team',{ 'filters/team':'// header\n#include missing'},'filters/team',false],
+  ]){
+    const result=await compileRules(rules,{platform:'linux',readInclude:async path=>{if(!Object.hasOwn(files,path))throw Error('unavailable');return files[path];}});
+    assert.equal(result.ok,false);assert.equal(result.diagnostics[0].code,'include-read');assert.equal(result.diagnostics[0].source,source);assert.equal(result.diagnostics[0].line,2);assert.equal(result.diagnostics[0].isRoot,isRoot);
+  }
+});
+
 test('global exact-line dedup runs before repeated include detection', async () => {
   let reads = 0;
   const { matcher, dependencies } = await compile('#include a\n#include a', { readInclude: async () => { reads++; return 'drop'; } });

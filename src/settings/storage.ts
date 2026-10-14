@@ -66,7 +66,7 @@ export class SettingsService {
     }});
     this.check();
     if(includeFailure)throw new Failure(includeFailure);
-    if(!result.ok)throw new Failure(Object.freeze({code:'rules',diagnostics:Object.freeze(result.diagnostics.map(d=>Object.freeze({source:d.source,line:d.line,code:d.code,reason:d.code==='include-read'?'Could not read included file':'Invalid filter rule'})))}));
+    if(!result.ok)throw new Failure(Object.freeze({code:'rules',diagnostics:Object.freeze(result.diagnostics.map(d=>Object.freeze({source:d.source,isRoot:d.isRoot,line:d.line,code:d.code,reason:d.code==='include-read'?'Could not read included file':'Invalid filter rule'})))}));
     if(snapshot && cursor!==snapshot.includes.length)throw failure('schema');
     return {compiled:result,snapshot:Object.freeze({schemaVersion:1,settings,includes:Object.freeze(includes)})};
   }

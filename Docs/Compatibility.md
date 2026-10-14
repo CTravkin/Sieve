@@ -2,7 +2,7 @@
 
 ## Текущая граница доказательств
 
-Версия `0.4.5 (9)` содержит общий matcher, ранний runtime и vault-local настройки. UI и alias еще в разработке. Объявленные в manifest минимум и mobile support остаются целями. Matcher сравнен с native oracle на Windows и Linux: 5952 набора, 34351 результат сопоставления с четырьмя флагами, без расхождений. На Linux прошли все 38 Core/Oracle тестов, включая реальные symlink/include и POSIX permission denial; Windows сохраняет два соответствующих пропуска.
+Версия `0.5.2 (12)` содержит общий matcher, ранний runtime, vault-local настройки и EN/RU UI. Модель UI проверена, нативная проверка формы продолжается; alias еще в разработке. Объявленные в manifest минимум и mobile support остаются целями. Matcher сравнен с native oracle на Windows и Linux: 5952 набора, 34351 результат сопоставления с четырьмя флагами, без расхождений. На Linux прошли все 38 Core/Oracle тестов, включая реальные symlink/include и POSIX permission denial; Windows сохраняет два соответствующих пропуска.
 
 | Платформа | Доступность | Проверка | Результат |
 | --- | --- | --- | --- |

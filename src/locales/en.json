@@ -15,7 +15,42 @@
   "help": {
     "title": "Filter syntax",
     "compatibility": "Compatible with Syncthing filter syntax",
-    "close": "Close"
+    "close": "Close",
+    "renderError": "Could not display the syntax reference"
+  },
+  "status": {
+    "loading": "Loading settings",
+    "pending": "Loaded rules have not yet been applied",
+    "active": "Loaded rules are active",
+    "fallbackActive": "Previous working rules are active",
+    "fallbackSelected": "Previous working settings selected for recovery",
+    "unfiltered": "The vault is open without filtering",
+    "disposed": "Sieve is disabled",
+    "pendingReload": "Changes require a full vault reopen",
+    "unsaved": "The draft has unsaved changes"
+  },
+  "reload": {
+    "title": "Reopen the vault",
+    "description": "Settings are saved. Reload the vault to apply them.",
+    "reload": "Reload vault",
+    "later": "Later"
+  },
+  "diagnostics": {
+    "location": "{source}, line {line}: {reason}",
+    "pattern": "Invalid pattern",
+    "escape": "Use #escape once, with one character, before this file's patterns",
+    "includeRead": "Could not read the included file from this directive",
+    "multipleInclude": "This directive includes a file that has already been included",
+    "includeSyntax": "Specify a file path after #include",
+    "lineTooLong": "Rule line is too long (maximum 65535 UTF-8 bytes)"
+  },
+  "errors": {
+    "read": "Could not read the saved settings",
+    "json": "The settings file contains invalid JSON",
+    "schema": "The settings file has an unsupported format",
+    "rules": "Could not validate filter rules",
+    "timeout": "Settings validation or saving timed out",
+    "cancelled": "Settings operation was cancelled"
   },
   "messages": {
     "saved": "Settings saved",

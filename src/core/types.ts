@@ -24,6 +24,8 @@ export interface Matcher {
 
 export interface Diagnostic {
   readonly source: string;
+  /** Distinguishes the main rule list from a real include with the same name. */
+  readonly isRoot?: boolean;
   readonly line: number;
   readonly code: 'pattern' | 'escape' | 'include-read' | 'multiple-include' | 'include-syntax' | 'line-too-long';
   readonly reason: string;
