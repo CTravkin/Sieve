@@ -42,7 +42,7 @@ npm.cmd run build
 
 ## Ссылки
 
-- [План разработки](<../../Work/Plans/Sieve/2026-10-13 23-01 Разработка Sieve - План выполнения.md>)
+- [Критерии приемки](Docs/Acceptance.md)
 - [Синтаксис фильтров](Docs/Syntax.ru.md)
 - [Правила версий и сборок](Docs/Versioning.md)
 - [Приватная установка и обновление](Docs/Private-Package.md)
