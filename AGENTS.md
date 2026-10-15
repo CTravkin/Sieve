@@ -86,6 +86,8 @@ references and localization retain their English/Russian language pairs.
   GitHub documentation, never in the main settings screen or manifest description.
 - Use native `SettingGroup` cards and settings typography. Custom CSS is limited
   to necessary layout, agreed control sizes, emphasis and readable status colors.
+  Pass heading text as strings across windows; compose icons in the group's own
+  DOM because the host's realm-local fragment checks can stringify foreign nodes.
 - Target desktop, iOS and Android. Node/Electron do not enter shared/mobile
   code; desktop-specific access remains behind its platform boundary.
 - Constantine permits common development and source-based platform hypotheses

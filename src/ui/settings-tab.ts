@@ -34,11 +34,15 @@ export class SieveSettingsTab extends PluginSettingTab {
     this.unsubscribe?.();this.visible=true;
     if(!this.hydrated)this.draft=this.sieve.draftSettings??defaultSettings();
     const text=locale(getLanguage()).settings;const container=this.containerEl;container.empty();container.addClass('sieve-settings');
-    const title=container.ownerDocument.createDocumentFragment();
-    const heading=title.createEl('span',{cls:'sieve-settings-heading',attr:{role:'heading','aria-level':'2'}});
-    setIcon(heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}}),this.icon);
-    heading.createEl('span',{text:text.title});
-    const filterGroup=new SettingGroup(container).setHeading(title);
+    // Host setText stringifies fragments from another window. Pass a string,
+    // then decorate only this group's native heading DOM.
+    const filterGroup=new SettingGroup(container).setHeading(text.title);
+    const heading=filterGroup.listEl.parentElement?.querySelector<HTMLElement>('.setting-item-heading .setting-item-name');
+    if(heading){
+      heading.addClass('sieve-settings-heading');heading.setAttr('role','heading');heading.setAttr('aria-level','2');
+      const icon=heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}});
+      setIcon(icon,this.icon);heading.prepend(icon);
+    }
     filterGroup.addSetting(rulesSetting=>{
       rulesSetting.setName(text.rulesLabel).setDesc(text.rulesDescription).setClass('sieve-rules-setting');
       rulesSetting.descEl.setAttr('id','sieve-rules-description');

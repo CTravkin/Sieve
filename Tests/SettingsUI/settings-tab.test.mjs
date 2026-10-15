@@ -202,6 +202,21 @@ test('native settings rows show examples, vault-folder placeholder and status be
   }
 });
 
+test('native heading keeps its title and icon in a separate settings window in both languages',async()=>{
+  for(const language of ['en','ru']){
+    const h=await setup();try{
+      globalThis.__sieveTestLanguage=language;globalThis.__sieveTestForeignWindow=true;h.tab.display();
+      assert.doesNotMatch(h.tab.containerEl.textContent,/\[object DocumentFragment\]/);
+      const header=h.tab.containerEl.descendants().find(el=>el.classes.has('setting-item-heading'));
+      assert.equal(header.textContent.trim(),'Sieve');
+      const heading=header.descendants().find(el=>el.attributes.role==='heading');
+      assert.equal(heading.attributes['aria-level'],'2');
+      assert.ok(heading.descendants().some(el=>el.attributes['data-icon']==='layers'&&el.attributes['aria-hidden']==='true'));
+      h.tab.hide();h.tab.display();assert.equal(h.tab.containerEl.descendants().filter(el=>el.attributes['data-icon']==='layers').length,1);
+    }finally{h.tab.hide();h.plugin.onunload();resetUi();}
+  }
+});
+
 test('rules placeholder disappears on focus and restores on blur without inserting sample rules',async()=>{
   const h=await setup({rule:''});try{
     const rules=element(h.tab.containerEl,'textarea');assert.equal(rules.value,'');assert.equal(rules.placeholder,'*.tmp\n/build\n**/cache');

@@ -1,10 +1,12 @@
 // SDK/DOM boundary doubles. These verify plugin code, not native Obsidian UI.
 export const uiSdk = `
 export class Element {
-  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';this.ownerDocument={createDocumentFragment:()=>new Element('fragment')};}
+  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';this.ownerDocument={createDocumentFragment:()=>globalThis.__sieveTestForeignWindow?new ForeignDocumentFragment():new DocumentFragment()};}
   createEl(tag,options={}){const el=new Element(tag);el.parentElement=this;el._text=options.text||'';if(options.cls)el.addClass(...options.cls.split(' '));Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
   empty(){this.children=[];this._text='';}
-  setText(text){this._text=text;}
+  setText(text){this.empty();if(text instanceof DocumentFragment){this.children=text.children;for(const child of this.children)child.parentElement=this;text.children=[];}else this._text=String(text);}
+  prepend(child){if(child.parentElement)child.parentElement.children=child.parentElement.children.filter(el=>el!==child);child.parentElement=this;this.children.unshift(child);}
+  querySelector(selector){const parts=selector.split(' ');return this.descendants().find(el=>{if(!el.classes.has(parts.at(-1).slice(1)))return false;let parent=el.parentElement;for(let i=parts.length-2;i>=0;i--){while(parent&&!parent.classes.has(parts[i].slice(1)))parent=parent.parentElement;if(!parent)return false;parent=parent.parentElement;}return true;});}
   setAttr(key,value){this.attributes[key]=String(value);}
   removeAttribute(key){delete this.attributes[key];}
   addClass(...names){for(const name of names)this.classes.add(name);}
@@ -17,6 +19,9 @@ export class Element {
   set textContent(text){this._text=text;this.children=[];}
   descendants(){return this.children.flatMap(el=>[el,...el.descendants()]);}
 }
+// Host setText uses realm-local instanceof checks (Obsidian enhance.js).
+class DocumentFragment extends Element{toString(){return '[object DocumentFragment]';}}
+class ForeignDocumentFragment extends Element{toString(){return '[object DocumentFragment]';}}
 export class Plugin {constructor(app){this.app=app;this.settingTabs=[];}addSettingTab(tab){this.settingTabs.push(tab);}}
 export class PluginSettingTab {constructor(app,plugin){this.app=app;this.plugin=plugin;this.containerEl=new Element();}}
 export class Component {load(){this.loaded=true;}unload(){this.loaded=false;this.unloaded=true;}}
@@ -50,7 +55,7 @@ export class Setting {
 }
 export class SettingGroup {
   constructor(container){this.groupEl=container.createEl('div',{cls:'setting-group'});this.listEl=this.groupEl.createEl('div',{cls:'setting-items'});}
-  setHeading(fragment){const header=this.groupEl.createEl('div',{cls:'setting-item setting-item-heading'});header.children=fragment.children;for(const child of header.children)child.parentElement=header;this.groupEl.children=[header,...this.groupEl.children.filter(child=>child!==header)];return this;}
+  setHeading(text){const header=this.groupEl.createEl('div',{cls:'setting-item setting-item-heading'});header.createEl('div',{cls:'setting-item-name'}).setText(text);header.createEl('div',{cls:'setting-item-control'});this.groupEl.prepend(header);return this;}
   addSetting(callback){callback(new Setting(this.listEl));return this;}
 }
 export class MarkdownRenderer {static async render(app,markdown,el,path,component){el.setText(markdown);(globalThis.__sieveRenders??=[]).push({markdown,path,component});}}
@@ -61,4 +66,4 @@ export class Notice{constructor(message){(globalThis.__sieveTestNotices??=[]).pu
 `;
 
 export function element(root,tag,text){return root.descendants().find(el=>el.tag===tag&&(text===undefined||el.textContent===text));}
-export function resetUi(){globalThis.__sieveModals=[];globalThis.__sieveRenders=[];globalThis.__sieveTestNotices=[];globalThis.__sieveTestLanguage='en';}
+export function resetUi(){globalThis.__sieveModals=[];globalThis.__sieveRenders=[];globalThis.__sieveTestNotices=[];globalThis.__sieveTestLanguage='en';globalThis.__sieveTestForeignWindow=false;}
