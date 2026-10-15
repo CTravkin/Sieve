@@ -14,12 +14,14 @@ export function desktopIncludeReader(adapter:PrivateAdapter):(path:string)=>Prom
 
 /** Native desktop modules are resolved only inside this lazy desktop provider. */
 export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefined,configDir:string):AliasProvider {
-  type DesktopHost={require?:(name:string)=>any;electron?:{ipcRenderer?:{sendSync:(channel:string)=>unknown}};localStorage?:Storage};
+  type DesktopIpc={sendSync:(channel:string)=>unknown};
+  type NativePath={basename:(value:string)=>string;join:(...parts:string[])=>string};
+  type DesktopHost={require?:(name:string)=>unknown;electron?:{ipcRenderer?:DesktopIpc};localStorage?:Storage};
   const host=typeof window==='object'?window as unknown as DesktopHost:undefined;
   function registry():readonly VaultLabel[]|undefined {
     try {
-      const ipc=host?.electron?.ipcRenderer??host?.require?.('electron')?.ipcRenderer;
-      const path=host?.require?.('path');if(!ipc || typeof path?.basename!=='function' || typeof appId!=='string')return;
+      const ipc=host?.electron?.ipcRenderer??(host?.require?.('electron') as {ipcRenderer?:DesktopIpc}|undefined)?.ipcRenderer;
+      const path=host?.require?.('path') as Partial<NativePath>|undefined;if(typeof ipc?.sendSync!=='function' || typeof path?.basename!=='function' || typeof appId!=='string')return;
       const current=ipc.sendSync('vault') as {path?:unknown},entries=ipc.sendSync('vault-list') as Record<string,{path?:unknown}>;
       if(!current || typeof current.path!=='string' || !entries || typeof entries!=='object' || !Object.prototype.hasOwnProperty.call(entries,appId) || entries[appId]?.path!==current.path)return;
       const result:VaultLabel[]=[];
@@ -36,7 +38,7 @@ export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefin
       if(!entry || entry.path!==vault.path || !adapter.fsPromises || typeof adapter.fsPromises.readFile!=='function')throw Error('Alias read unavailable');
       const override=entry.isCurrentVault?configDir:host?.localStorage?.getItem(entry.id+'-config')||'.obsidian';
       if(typeof override!=='string' || !override || /^(?:[a-z]:|[\\/])/i.test(override) || override.split(/[\\/]/).some(part=>part==='..' || part==='.' || !part))throw Error('Alias config unavailable');
-      const path=host?.require?.('path');if(typeof path?.join!=='function')throw Error('Alias read unavailable');
+      const path=host?.require?.('path') as Partial<NativePath>|undefined;if(typeof path?.join!=='function')throw Error('Alias read unavailable');
       return method(adapter.fsPromises,'readFile').call(adapter.fsPromises,path.join(entry.path,override,'plugins','sieve','data.json'),'utf8');
     }};
   }

@@ -14,6 +14,8 @@ Sieve filters files and folders before Obsidian indexes a vault. It keeps genera
 
 Obsidian 1.14.4 or later is required. Desktop behavior has been tested on Windows; the matcher has also been checked against native Syncthing on Linux. macOS, iOS and Android share the portable implementation but have not been verified on devices.
 
+For display names in other mobile vaults, the current provider reads the standard `.obsidian` directory. Custom configuration locations in those vaults are not yet supported.
+
 Filtering uses Obsidian internals. Unsupported runtime structures leave the vault unfiltered and show a notice.
 
 ## Data access
@@ -49,7 +51,7 @@ The archive name is `Sieve X.Y.Z (build N).zip`. Build output is local and exclu
 
 ### Usage
 
-Add one rule per line under **Settings → Sieve**. For example:
+Open **Settings → Sieve**, or find its fields through Obsidian's settings search. Add one rule per line. For example:
 
 ```text
 !important

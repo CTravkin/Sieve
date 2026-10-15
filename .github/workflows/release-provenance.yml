@@ -1,0 +1,124 @@
+name: Release provenance
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  resolve-source:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      commit: ${{ steps.resolve.outputs.commit }}
+    steps:
+      - name: Resolve release tag to commit
+        id: resolve
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          tag="$RELEASE_TAG"
+
+          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable X.Y.Z release tag" >&2
+            exit 1
+          fi
+
+          tag_ref="refs/tags/$tag"
+          refs="$(git ls-remote "https://github.com/$REPOSITORY.git" "$tag_ref" "${tag_ref}^{}")"
+          commit="$(awk -v ref="$tag_ref" '$2 == ref"^{}" { print $1; exit }' <<< "$refs")"
+          if [[ -z "$commit" ]]; then
+            commit="$(awk -v ref="$tag_ref" '$2 == ref { print $1; exit }' <<< "$refs")"
+          fi
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Could not resolve the release tag to a Git commit" >&2
+            exit 1
+          fi
+          if [[ "$commit" != "$EVENT_SHA" ]]; then
+            echo "The published tag no longer points to the commit recorded by the release event" >&2
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+  build-and-attest:
+    needs: resolve-source
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ needs.resolve-source.outputs.tag }}
+      SOURCE_COMMIT: ${{ needs.resolve-source.outputs.commit }}
+    steps:
+      - name: Check out the resolved release commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.resolve-source.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.x
+
+      - name: Confirm checked out commit
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:SOURCE_COMMIT) {
+            throw 'Checked out commit does not match the resolved release commit'
+          }
+
+      - name: Install dependencies and build release files
+        working-directory: Plugin
+        run: |
+          npm.cmd ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm.cmd run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Compare build with published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = Join-Path $env:RUNNER_TEMP 'release-assets'
+          New-Item -ItemType Directory -Path $assets -Force | Out-Null
+          gh release download $env:RELEASE_TAG `
+            --repo $env:GITHUB_REPOSITORY `
+            --pattern main.js `
+            --pattern manifest.json `
+            --pattern styles.css `
+            --dir $assets
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $built = 'Builds/sieve'
+          foreach ($name in @('main.js', 'manifest.json', 'styles.css')) {
+            $builtPath = Join-Path $built $name
+            $assetPath = Join-Path $assets $name
+            if (!(Test-Path -LiteralPath $builtPath -PathType Leaf) -or !(Test-Path -LiteralPath $assetPath -PathType Leaf)) {
+              throw "Required build or release asset is missing: $name"
+            }
+            $builtHash = (Get-FileHash -LiteralPath $builtPath -Algorithm SHA256).Hash
+            $assetHash = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash
+            if ($builtHash -ne $assetHash) {
+              throw "Built bytes differ from the published release asset: $name"
+            }
+          }
+
+      - name: Attest main.js
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: Builds/sieve/main.js
+
+      - name: Attest styles.css
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: Builds/sieve/styles.css

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-export type NativeFunction=(this:any,...args:any[])=>any;
+export type NativeFunction=(this:unknown,...args:unknown[])=>unknown;
 
 /** Restore only our own wrapper; a retained foreign wrapper sees an inert delegate. */
 export function wrap(owner:object,key:string,replacement:NativeFunction):()=>void {
