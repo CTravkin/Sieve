@@ -94,7 +94,9 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
     for(const key of ['reconcileFile',...(!mobile?['reconcileFileInternal']:[])])wrap(adapter,key,function(original,args){
       const real=typeof args[0]==='string'?args[0]:'';const normalized=typeof args[1]==='string'?args[1]:hostKey(real);const decision=decide(real);
       if(decision.ignored && !projection.has(normalized) && (decision.canSkipDir || cached(normalized)?.type==='file')){mark(normalized,false);forget(normalized);return Promise.resolve();}
-      if(!mobile && key==='reconcileFile' && decision.ignored && !projection.has(normalized))return method(adapter,'reconcileFileInternal').apply(adapter,args);
+      // Keep native reconcileFile's ENOENT recovery for traversable containers.
+      // They can disappear between watcher notification and lstat, even when
+      // their allowed descendants previously kept them in the projection.
       return original.apply(adapter,args);
     // Native reconcileFile handles inner ENOENT itself; traversal failures still
     // reach the guarded caller. Own filtering errors always deactivate hooks.

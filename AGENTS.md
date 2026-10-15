@@ -107,6 +107,13 @@ references and localization retain their English/Russian language pairs.
 | Private candidate | This repository | `npm.cmd run test:regression` and `npm.cmd run test:package` | Required for ZIP delivery, together with clean commit and exact verified inventory |
 | Platform acceptance | Actual host/device | Selected plan's native scenarios | Name unperformed gates; common-code tests do not prove support |
 
+Performance changes require functional regression checks as well as comparable
+timings: direct file access, native events, links/metadata, hidden transitions and
+cleanup must stay operational. Record installed identity and distinguish API
+evidence from editor/UI evidence. Use exact vault IDs when names are ambiguous;
+never select a working vault by basename alone. Workspace diagnostics are optional
+for standalone checkouts; retain the same behavioral acceptance boundaries.
+
 ### Versioning
 
 `package.json` owns `version` and integer `sieveBuild`; synchronize
