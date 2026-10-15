@@ -15,6 +15,32 @@ if(!result.ok) throw new Error(JSON.stringify(result.diagnostics));
 console.log(JSON.stringify({bytes:rules.length,elapsed:performance.now()-started,yes:shape===undefined?result.matcher.match('deep/😀a/end').ignored:undefined,no:result.matcher.match('xyz').ignored}));
 `;
 
+test('Projects directory groups handle thousands of long unique startup paths within a bounded subprocess', t => {
+  const matchProgram = `
+    import {compileRules} from './dist/core/matcher.mjs';
+    const rules = [
+      '(?i)**/{temp,temp[-_]*,tmp*,whisper[-_]work*,build,dist,target,bin,obj,go-mod,go-build}/**',
+      '(?i)**/{src,internal,cmd,lib,libs,include,vendor,third[-_]party*,packages}/**',
+      '(?i)!*.md', '*',
+    ].join('\\n');
+    const compiled = await compileRules(rules, {platform:'windows'});
+    if(!compiled.ok) throw Error(JSON.stringify(compiled.diagnostics));
+    const started = performance.now();
+    for(let i=0;i<6000;i++) {
+      const path = 'Project/QA/Evidence/2026-10-03 hourly-works-baseline/baseline-src/Frontend/scripts/choice-list-contract-' + i + (i%2 ? '.md' : '.cjs');
+      const result = compiled.matcher.match(path);
+      if(result.ignored !== (i%2===0) || !result.caseFolded || result.canSkipDir || result.deletable) throw Error('Matching semantics changed at '+i);
+    }
+    console.log(JSON.stringify({paths:6000,elapsed:performance.now()-started}));
+  `;
+  const child=spawnSync(process.execPath,['--input-type=module','-e',matchProgram],{cwd:repository,encoding:'utf8',timeout:5000,maxBuffer:65536,windowsHide:true});
+  assert.equal(child.error,undefined,`Startup matching exceeded its 5-second subprocess bound: ${child.error?.message}`);
+  assert.equal(child.status,0,child.stderr.slice(0,2000));
+  const result=JSON.parse(child.stdout);
+  assert.equal(result.paths,6000);
+  t.diagnostic(`6000 unique long startup paths matched in ${result.elapsed.toFixed(1)} ms`);
+});
+
 test('long mixed glob compiles within a bounded subprocess without restricting valid mask length', t => {
   const child=spawnSync(process.execPath,['--input-type=module','-e',program],{cwd:repository,input:JSON.stringify({n:16383}),encoding:'utf8',timeout:5000,maxBuffer:65536,windowsHide:true});
   assert.equal(child.error,undefined,`Compiler exceeded its 5-second subprocess bound: ${child.error?.message}`);

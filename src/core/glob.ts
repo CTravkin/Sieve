@@ -10,7 +10,13 @@ interface Glob {
 }
 type Index = [number, number[]];
 const none = (): Index => [-1, []];
-const encode = (s: string): string => Array.from(new TextEncoder().encode(s), b => String.fromCharCode(b)).join('');
+const encoder = new TextEncoder();
+const encode = (s: string): string => {
+  if (/^[\x00-\x7f]*$/.test(s)) return s;
+  const bytes = encoder.encode(s); let result = '';
+  for (let offset=0;offset<bytes.length;offset+=8192) result += String.fromCharCode(...bytes.subarray(offset,offset+8192));
+  return result;
+};
 const byteLength = (r: number): number => r < 0x80 ? 1 : r < 0x800 ? 2 : r < 0x10000 ? 3 : 4;
 
 // Go DecodeRuneInString returns RuneError with width 1 for each invalid byte.
@@ -47,7 +53,11 @@ function matchAll(s: string, ms: Glob[]): boolean {
   let index = 0;
   for (const m of ms) {
     let runeCount = 0; let bytes = 0;
-    for (const [, r] of runes(s.slice(index))) {
+    // Decode only the prefix this fixed row needs, rather than allocating all
+    // runes of every suffix at every candidate offset. Keep native rune/byte
+    // accounting (including invalid-byte RuneError widths) unchanged.
+    for (let cursor=index;cursor<s.length;) {
+      const [r,width] = decode(s,cursor); cursor += width;
       runeCount++; bytes += byteLength(r);
       if (runeCount === m.len) break;
     }
@@ -157,8 +167,10 @@ function find(m: Glob, s: string): Index {
       return segments.length ? [i, segments.reverse()] : none();
     }
     case 'row': {
+      const prefix = children[0]?.kind === 'text' ? children[0].text : undefined;
       for (const [i] of runes(s)) {
         if (s.length - i < m.len) break;
+        if (prefix !== undefined && !s.startsWith(prefix,i)) continue;
         if (matchAll(s.slice(i), children)) return [i, [m.len]];
       }
       return none();
