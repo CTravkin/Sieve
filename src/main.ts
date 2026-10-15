@@ -1,12 +1,13 @@
 import {Plugin,Notice,Platform as HostPlatform,getLanguage} from 'obsidian';
 import type {Platform,Diagnostic} from './core/types.ts';
 import {SettingsService} from './settings/storage.ts';
-import type {SaveResult,SettingsError} from './settings/storage.ts';
+import type {SaveResult,SettingsError,ValidationResult} from './settings/storage.ts';
 import type {SieveSettings} from './settings/model.ts';
 import {installFilter} from './platform/lifecycle.ts';
 import type {FilterInstallation,PrivateAdapter,RuntimeApp} from './platform/contracts.ts';
 import {messages} from './i18n/index.ts';
 import {SieveSettingsTab} from './ui/settings-tab.ts';
+import {localizeManifestDescription} from './ui/manifest-description.ts';
 import {installAliases} from './alias/projection.ts';
 import type {AliasApp,AliasInstallation,AliasCapabilities} from './alias/contracts.ts';
 
@@ -33,6 +34,7 @@ export default class SievePlugin extends Plugin {
   private state:PluginStatus['status']='loading';
   private runtimeErrorNotified=false;
   private settingsTab?:SieveSettingsTab;
+  private restoreDescription?:()=>void;
   private readonly listeners=new Set<()=>void>();
   private aliases?:AliasInstallation;
   private aliasName='';
@@ -40,6 +42,7 @@ export default class SievePlugin extends Plugin {
   get savedSettings():SieveSettings|undefined {return this.service?.state.saved;}
   get activeSettings():SieveSettings|undefined {return this.runtime?.phase==='applied'?this.service?.state.active:undefined;}
   get draftSettings():SieveSettings|undefined {return this.service?.state.draft;}
+  get needsSettingsRecovery():boolean {return this.service?.state.needsRecovery??false;}
   getStatus():PluginStatus {
     const settings=this.service?.state;
     const status=this.disposed?'disposed':this.runtime?.status==='unsupported'?'unsupported':this.runtime?.status==='error'?'error':this.runtime?.phase??this.state;
@@ -54,6 +57,7 @@ export default class SievePlugin extends Plugin {
   }
   async onload():Promise<void> {
     const generation=++this.generation;this.disposed=false;this.state='loading';this.runtimeErrorNotified=false;
+    this.restoreDescription?.();this.restoreDescription=localizeManifestDescription(this.manifest,getLanguage);
     this.aliases?.dispose();this.aliases=undefined;this.aliasName='';
     this.runtime?.dispose();this.service?.dispose();this.runtime=undefined;
     this.settingsTab?.hide();this.settingsTab=new SieveSettingsTab(this.app,this);this.addSettingTab(this.settingsTab);
@@ -88,6 +92,11 @@ export default class SievePlugin extends Plugin {
     return result;
   }
   setDraftSettings(candidate:SieveSettings):void {if(!this.disposed && this.state!=='loading')this.service?.setDraft(candidate);}
+  resetDraftSettings():void {if(!this.disposed && this.state!=='loading')this.service?.resetDraft();}
+  validateSettings(candidate:unknown):Promise<ValidationResult> {
+    if(!this.service || this.disposed || this.state==='loading')return Promise.resolve({ok:false,error:{code:'cancelled'}});
+    return this.service.validate(candidate);
+  }
   reloadVault():void {if(!this.disposed)window.location.reload();}
   async onExternalSettingsChange():Promise<void> {
     if(!this.service || this.disposed)return;
@@ -96,5 +105,5 @@ export default class SievePlugin extends Plugin {
     else {this.aliasName=this.service.state.saved?.displayName??this.aliasName;this.aliases?.refresh();}
     this.changed();
   }
-  onunload():void {this.disposed=true;this.generation++;this.aliases?.dispose();this.settingsTab?.hide();this.service?.dispose();this.runtime?.dispose();this.listeners.clear();}
+  onunload():void {this.disposed=true;this.generation++;this.restoreDescription?.();this.aliases?.dispose();this.settingsTab?.hide();this.service?.dispose();this.runtime?.dispose();this.listeners.clear();}
 }

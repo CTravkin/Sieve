@@ -92,6 +92,9 @@ references and localization retain their English/Russian language pairs.
   verified. Rules use the UI or `<configDir>/plugins/sieve/data.json` and apply
   after reopening the vault; successful UI saves offer reload. Russian Obsidian
   uses RU, every other language uses EN.
+- Validate rules on blur and Save, without writing on blur. Closing settings
+  discards the draft; stale asynchronous results must not restore it. Disable
+  Save for unchanged values, unavailable storage or known invalid rules.
 - Vault-switching menus show each vault's configured display name. Updating only
   the active label is insufficient; preserve filesystem paths and vault IDs.
 - Retain one previous working configuration on changed saves. Startup errors

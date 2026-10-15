@@ -12,8 +12,8 @@ export function diagnosticMessage(diagnostic:Diagnostic,language:string):string 
   const text=locale(language).diagnostics;
   const reasons={'pattern':text.pattern,'escape':text.escape,'include-read':text.includeRead,'multiple-include':text.multipleInclude,'include-syntax':text.includeSyntax,'line-too-long':text.lineTooLong};
   // The parser reports the caller of #include, not its unreadable target.
-  const source=diagnostic.isRoot===true?locale(language).settings.rulesLabel:diagnostic.source;
-  return interpolate(text.location,{source,line:diagnostic.line,reason:reasons[diagnostic.code]});
+  const template=diagnostic.isRoot===true?text.location:text.locationInFile;
+  return interpolate(template,{source:diagnostic.source,line:diagnostic.line,reason:reasons[diagnostic.code]});
 }
 export function settingsErrorMessages(error:SettingsError,language:string):string[] {
   if(error.code==='rules' && error.diagnostics?.length)return error.diagnostics.map(diagnostic=>diagnosticMessage(diagnostic,language));

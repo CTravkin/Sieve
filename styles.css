@@ -15,23 +15,60 @@
   white-space: pre;
   font-family: var(--font-monospace);
 }
-.sieve-settings .sieve-status p,
-.sieve-settings .sieve-errors p {
-  margin: var(--size-4-2) 0;
+.sieve-settings .sieve-syntax-example {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: var(--size-4-2);
+  row-gap: var(--size-2-1);
+}
+.sieve-settings .sieve-syntax-pattern {
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+.sieve-settings .sieve-display-name-setting input {
+  width: 24em;
+  max-width: 100%;
 }
 .sieve-settings .sieve-status {
   color: var(--text-muted);
 }
-.sieve-settings .sieve-errors {
+.sieve-settings .sieve-status-warning {
+  color: var(--text-warning);
+  color: color-mix(in srgb, var(--text-warning) 65%, var(--text-normal));
+}
+.sieve-settings .sieve-status-error,
+.sieve-settings .sieve-rule-errors {
   color: var(--text-error);
+  color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
   overflow-wrap: anywhere;
+}
+.sieve-settings .sieve-rule-errors {
+  margin-top: var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+.sieve-settings .sieve-rule-errors:empty {
+  display: none;
 }
 .sieve-syntax-modal {
   width: min(52rem, 95vw);
+  height: min(48rem, var(--dialog-max-height));
+  overflow: hidden;
+}
+.sieve-syntax-modal .sieve-syntax-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 .sieve-syntax-body {
-  max-height: 65vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
+}
+.sieve-syntax-footer {
+  flex: 0 0 auto;
 }
 .sieve-syntax-body pre {
   overflow: auto;

@@ -16,11 +16,10 @@ export class SyntaxHelpModal extends Modal {
   constructor(app:App){super(app);}
   async onOpen():Promise<void> {
     const language=getLanguage();const text=locale(language).help;
-    this.setTitle(text.title);this.modalEl.addClass('sieve-syntax-modal');this.contentEl.empty();
-    this.contentEl.createEl('p',{text:text.compatibility});
+    this.setTitle(text.title);this.modalEl.addClass('sieve-syntax-modal');this.contentEl.empty();this.contentEl.addClass('sieve-syntax-content');
     const body=this.contentEl.createEl('div',{cls:'sieve-syntax-body markdown-rendered'});
     const rendering=new Component();this.rendering=rendering;rendering.load();
-    new Setting(this.contentEl).addButton(button=>button.setButtonText(text.close).onClick(()=>this.close()));
+    new Setting(this.contentEl).setClass('sieve-syntax-footer').addButton(button=>button.setButtonText(text.close).onClick(()=>this.close()));
     try{await MarkdownRenderer.render(this.app,syntaxHelp(language),body,'',rendering);}
     catch{if(this.rendering===rendering)body.setText(text.renderError);}
     finally{if(this.rendering!==rendering){rendering.unload();body.empty();}}

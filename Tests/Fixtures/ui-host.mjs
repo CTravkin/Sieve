@@ -1,14 +1,18 @@
 // SDK/DOM boundary doubles. These verify plugin code, not native Obsidian UI.
 export const uiSdk = `
 export class Element {
-  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.value='';this.disabled=false;this._text='';}
-  createEl(tag,options={}){const el=new Element(tag);el._text=options.text||'';if(options.cls)el.addClass(options.cls);Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
+  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';}
+  createEl(tag,options={}){const el=new Element(tag);el.parentElement=this;el._text=options.text||'';if(options.cls)el.addClass(options.cls);Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
   empty(){this.children=[];this._text='';}
   setText(text){this._text=text;}
   setAttr(key,value){this.attributes[key]=String(value);}
   removeAttribute(key){delete this.attributes[key];}
   addClass(...names){for(const name of names)this.classes.add(name);}
   removeClass(...names){for(const name of names)this.classes.delete(name);}
+  addEventListener(type,callback){const listeners=this.listeners.get(type)||[];listeners.push(callback);this.listeners.set(type,listeners);}
+  dispatchEvent(event){return Promise.all((this.listeners.get(event.type)||[]).map(callback=>callback(event)));}
+  focus(){return this.dispatchEvent({type:'focus'});}
+  blur(relatedTarget=null){return this.dispatchEvent({type:'blur',relatedTarget});}
   get textContent(){return this._text+this.children.map(el=>el.textContent).join(' ');}
   set textContent(text){this._text=text;this.children=[];}
   descendants(){return this.children.flatMap(el=>[el,...el.descendants()]);}
@@ -26,6 +30,7 @@ export class Modal {
 export class TextComponent {
   constructor(el,tag='input'){this.inputEl=el.createEl(tag);}
   setValue(value){this.inputEl.value=value;return this;}setDisabled(value){this.inputEl.disabled=value;return this;}
+  setPlaceholder(value){this.inputEl.placeholder=value;return this;}
   onChange(callback){this.inputEl.change=value=>{if(!this.inputEl.disabled){this.inputEl.value=value;callback(value);}};return this;}
 }
 export class TextAreaComponent extends TextComponent{constructor(el){super(el,'textarea');}}

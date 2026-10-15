@@ -64,10 +64,11 @@ export async function checkProject() {
   assert.equal(ru.settings.description, 'Исключает файлы и каталоги перед индексацией хранилища');
   assert.equal(ru.messages.unsupportedVersion, 'Эта версия Obsidian не поддерживает фильтрацию Sieve');
   for (const locale of [en, ru]) {
-    assert.match(locale.settings.syntaxSummary, /\*/);
-    assert.match(locale.settings.syntaxSummary, /!/);
-    assert.match(locale.settings.syntaxSummary, /\/\//);
-    assert.match(locale.help.compatibility, /Syncthing/);
+    const examples=Object.values(locale.settings.syntaxExamples);
+    assert.equal(examples.length,5);
+    assert.deepEqual(examples.slice(0,4).map(example=>example.rule),['!important.tmp','*.tmp','/build','**/cache']);
+    assert.match(examples[4].rule,/^\/\//);
+    assert.equal(locale.settings.rulesPlaceholder,'*.tmp\n/build\n**/cache');
   }
   const markdown = await listMarkdown(root);
   let linkCount = 0;

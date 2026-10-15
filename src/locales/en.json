@@ -2,21 +2,27 @@
   "settings": {
     "title": "Sieve",
     "description": "Excludes files and folders before vault indexing",
-    "vaultLabel": "Vault",
     "rulesLabel": "Filter rules",
-    "rulesDescription": "Paths are relative to the vault root. The first matching rule wins.",
+    "rulesDescription": "One rule per line; the first match applies",
+    "rulesPlaceholder": "*.tmp\n/build\n**/cache",
     "syntaxLabel": "Syntax",
-    "syntaxSummary": "One rule per line. * matches characters within a name; ** also crosses folders. Prefix ! to include matching paths. Start a comment line with //.",
-    "openHelp": "Full syntax reference",
+    "syntaxExamples": {
+      "include": {"rule": "!important.tmp", "description": "keep important.tmp"},
+      "exclude": {"rule": "*.tmp", "description": "exclude .tmp files"},
+      "root": {"rule": "/build", "description": "exclude build at the root"},
+      "nested": {"rule": "**/cache", "description": "exclude cache at any level"},
+      "comment": {"rule": "// comment", "description": "comment"}
+    },
+    "openHelp": "Help",
+    "statusLabel": "Status",
     "save": "Save",
     "displayNameLabel": "Vault display name",
-    "displayNameDescription": "Leave empty to use the root folder name."
+    "displayNameDescription": "Leave empty to display the root folder name."
   },
   "help": {
     "title": "Filter syntax",
-    "compatibility": "Compatible with Syncthing filter syntax",
     "close": "Close",
-    "renderError": "Could not display the syntax reference"
+    "renderError": "Could not load help"
   },
   "status": {
     "loading": "Loading settings",
@@ -25,18 +31,19 @@
     "fallbackActive": "Previous working rules are active",
     "fallbackSelected": "Previous working settings selected for recovery",
     "unfiltered": "The vault is open without filtering",
-    "disposed": "Sieve is disabled",
-    "pendingReload": "Changes require a full vault reopen",
+    "disposed": "Plugin disabled",
+    "pendingReload": "Changes require reopening the vault",
     "unsaved": "The draft has unsaved changes"
   },
   "reload": {
-    "title": "Reopen the vault",
-    "description": "Settings are saved. Reload the vault to apply them.",
-    "reload": "Reload vault",
-    "later": "Later"
+    "title": "Reload vault",
+    "description": "Reopen the vault to apply the settings",
+    "reload": "Reload",
+    "later": "Postpone"
   },
   "diagnostics": {
-    "location": "{source}, line {line}: {reason}",
+    "location": "Line {line}: {reason}",
+    "locationInFile": "Line {line}: {reason} ({source})",
     "pattern": "Invalid pattern",
     "escape": "Use #escape once, with one character, before this file's patterns",
     "includeRead": "Could not read the included file from this directive",
@@ -54,14 +61,10 @@
   },
   "messages": {
     "saved": "Settings saved",
-    "ruleError": "Error on line {line}: {reason}",
-    "includeReadError": "Could not read file {path}",
-    "includeRepeatedError": "File {path} is included more than once",
-    "escapePositionError": "The #escape directive must precede filter rules",
     "unsupportedVersion": "This version of Obsidian does not support Sieve filtering",
-    "configurationError": "Could not load Sieve settings. The vault will open without filtering.",
-    "fallbackUsed": "Could not load the saved rules. The previous working rules will be used.",
-    "runtimeError": "Could not complete Sieve filtering. Reopen the vault.",
+    "configurationError": "Could not load Sieve settings; vault filtering is disabled",
+    "fallbackUsed": "Could not load the saved filter rules; their previous version is in use",
+    "runtimeError": "Could not complete Sieve filtering; reopen the vault",
     "saveError": "Could not save Sieve settings",
     "externalError": "Could not validate the saved Sieve settings"
   }

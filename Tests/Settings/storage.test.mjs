@@ -11,6 +11,32 @@ function memory(initial={}) {
 const options=(io,readInclude)=>({io,configDir:'.custom',platform:'linux',readInclude});
 const current='.custom/plugins/sieve/data.json'; const previous='.custom/plugins/sieve/data.previous.json';
 
+test('draft validation is read-only and does not capture a working backup',async()=>{
+  const io=memory({[current]:JSON.stringify(config('private'))});let content='first';
+  const service=new SettingsService(options(io,async()=>content));await service.startup();service.setDraft(config('entered'));
+  const before=service.state;assert.deepEqual(await service.validate(config('#include rules')),{ok:true});
+  assert.deepEqual(service.state,before);assert.deepEqual(io.writes,[]);
+  const invalid=await service.validate(config('['));assert.equal(invalid.ok,false);assert.equal(invalid.error.code,'rules');assert.deepEqual(service.state,before);
+  content='second';await service.save(config('#include rules'));assert.deepEqual(io.writes,[current],'validation must not promote startup settings to a confirmed working backup');
+});
+
+test('discarded draft follows latest validated saved settings or working fallback without writing',async()=>{
+  for(const broken of [false,true]){
+    const io=memory({[current]:broken?'{':JSON.stringify(config('saved')),[previous]:JSON.stringify({schemaVersion:1,settings:config('fallback'),includes:[]})});
+    const service=new SettingsService(options(io));await service.startup();service.setDraft(config('discard'));
+    service.resetDraft();assert.equal(service.state.draft.rules,broken?'fallback':'saved');assert.deepEqual(io.writes,[]);assert.equal(service.state.needsRecovery,broken);
+  }
+  const service=new SettingsService(options(memory({[current]:JSON.stringify(config('['))})));await service.startup();service.setDraft(config('discard'));service.resetDraft();assert.deepEqual(service.state.draft,config());assert.equal(service.state.needsRecovery,true);
+});
+
+test('discarding failed draft restores only persisted-config errors',async()=>{
+  for(const broken of [false,true]){
+    const io=memory({[current]:broken?'{':JSON.stringify(config('saved')),[previous]:JSON.stringify({schemaVersion:1,settings:config('fallback'),includes:[]})});
+    const service=new SettingsService(options(io));await service.startup();const result=await service.save(config('['));assert.equal(result.error.code,'rules');assert.equal(service.state.error.code,'rules');
+    service.resetDraft();assert.equal(service.state.error?.code,broken?'json':undefined);assert.deepEqual(io.writes,[]);
+  }
+});
+
 test('sanitized settings diagnostics preserve root provenance without retaining parser reason',async()=>{
   const io=memory();const service=new SettingsService(options(io,async()=> '['));await service.startup();
   const root=await service.save(config('['));const included=await service.save(config('#include .stignore'));
