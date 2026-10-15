@@ -13,6 +13,7 @@ export function mobileIncludeReader(adapter:PrivateAdapter):(path:string)=>Promi
 export function mobileAliasProvider(adapter:PrivateAdapter,configDir:string):AliasProvider {
   return {async read(vault){
     const provider=adapter.fs;
+    // The native chooser exposes no other-vault ID for resolving a config override.
     const directory=vault.isCurrentVault?configDir:'.obsidian';
     if(!provider || typeof provider.read!=='function' || !vault.path || /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(vault.path) || /^(?:[a-z]:|[\\/])/i.test(directory) || directory.split(/[\\/]/).some(part=>part==='..' || part==='.' || !part))throw Error('Alias read unavailable');
     return method(provider,'read').call(provider,vault.path.replace(/\/$/,'')+'/'+directory+'/plugins/sieve/data.json');

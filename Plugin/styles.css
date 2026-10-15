@@ -36,13 +36,20 @@
 }
 .sieve-settings .sieve-status-warning {
   color: var(--text-warning);
-  color: color-mix(in srgb, var(--text-warning) 65%, var(--text-normal));
 }
 .sieve-settings .sieve-status-error,
 .sieve-settings .sieve-rule-errors {
   color: var(--text-error);
-  color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
   overflow-wrap: anywhere;
+}
+@supports (color: color-mix(in srgb, red, black)) {
+  .sieve-settings .sieve-status-warning {
+    color: color-mix(in srgb, var(--text-warning) 65%, var(--text-normal));
+  }
+  .sieve-settings .sieve-status-error,
+  .sieve-settings .sieve-rule-errors {
+    color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
+  }
 }
 .sieve-syntax-modal {
   overflow: hidden;

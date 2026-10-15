@@ -70,7 +70,7 @@ export class SieveSettingsTab extends PluginSettingTab {
     const heading=filterGroup.listEl.parentElement?.querySelector<HTMLElement>('.setting-item-heading .setting-item-name');
     if(heading){
       heading.addClass('sieve-settings-heading');heading.setAttr('role','heading');heading.setAttr('aria-level','2');
-      const icon=heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}});
+      const icon=heading.createSpan({cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}});
       setIcon(icon,this.icon);heading.prepend(icon);
     }
   }
@@ -91,15 +91,15 @@ export class SieveSettingsTab extends PluginSettingTab {
         return this.validateRules();
       });
     });
-    this.errorsEl=rulesSetting.settingEl.createEl('div',{cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
+    this.errorsEl=rulesSetting.settingEl.createDiv({cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
   }
   private renderSyntax(syntaxSetting:Setting):void {
     const text=locale(getLanguage()).settings;
     syntaxSetting.addButton(button=>button.setButtonText(text.openHelp).onClick(()=>{this.help?.close();this.help=new SyntaxHelpModal(this.app);this.help.open();}));
     syntaxSetting.descEl.addClass('sieve-syntax-examples');
     for(const example of Object.values(text.syntaxExamples)){
-      const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
-      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:' '+example.description});
+      const row=syntaxSetting.descEl.createDiv({cls:'sieve-syntax-example'});
+      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createSpan({text:' '+example.description});
     }
   }
   private renderDisplayName(nameSetting:Setting):void {
@@ -148,9 +148,9 @@ export class SieveSettingsTab extends PluginSettingTab {
       }
       this.observedSaved=saved;
     }
-    this.statusEl?.empty();for(const entry of statusEntries(status,this.sieve.savedSettings,this.draft,language))this.statusEl?.createEl('div',{text:entry.text,cls:entry.severity?`sieve-status-${entry.severity}`:undefined});
+    this.statusEl?.empty();for(const entry of statusEntries(status,this.sieve.savedSettings,this.draft,language))this.statusEl?.createDiv({text:entry.text,cls:entry.severity?`sieve-status-${entry.severity}`:undefined});
     const error=this.saveError??this.validationError??(status.errorCode&&this.dismissedStatusError!==this.statusErrorKey()?{code:status.errorCode,diagnostics:status.diagnostics}:undefined);
-    this.errorsEl?.empty();if(error)for(const message of settingsErrorMessages(error,language))(error.code==='rules'?this.errorsEl:this.statusEl)?.createEl('div',{text:message,cls:'sieve-status-error'});
+    this.errorsEl?.empty();if(error)for(const message of settingsErrorMessages(error,language))(error.code==='rules'?this.errorsEl:this.statusEl)?.createDiv({text:message,cls:'sieve-status-error'});
     this.rules?.inputEl.setAttr('aria-invalid',String(error?.code==='rules'));
     this.saveButton?.setDisabled(!this.canSave());
     this.rules?.setDisabled(blocked);this.displayName?.setDisabled(blocked);

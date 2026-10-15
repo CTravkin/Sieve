@@ -4,7 +4,7 @@ import type { Platform } from './types.ts';
 
 export function nativeNormalize(text: string, platform: Platform): string {
   // ASCII is already normalized in every pinned platform form.
-  if (/^[\x00-\x7f]*$/.test(text)) return text;
+  if (!/[\u0080-\uffff]/.test(text)) return text;
   const decomposed: number[] = [];
   let streamSafe = 0;
   const append = (rune: number): void => {
@@ -66,7 +66,7 @@ export function toSlash(path: string, platform: Platform): string {
 
 /** Go strings.TrimSpace differs from JS trim: BOM stays; NEL is whitespace. */
 export function trimSpace(text: string): string {
-  return text.replace(/^[\u0009-\u000d \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+|[\u0009-\u000d \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+$/g, '');
+  return text.replace(/^[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+|[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+$/g, '');
 }
 
 /** Lexical Go filepath.Join/Clean, using forward slashes at the reader boundary. */

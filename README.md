@@ -34,7 +34,7 @@ For an update, replace the package files while preserving `data.json` and `data.
 
 ### Build
 
-Node.js 22 or later is required. From `Plugin`:
+Node.js 22.13 or later is required. From `Plugin`:
 
 ```sh
 npm ci
@@ -80,6 +80,7 @@ From `Plugin`:
 
 ```sh
 npm run check
+npm run lint
 npm run typecheck
 npm run test:regression
 npm run test:core

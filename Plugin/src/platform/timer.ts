@@ -6,9 +6,7 @@ export function scheduleTimeout(callback:()=>void,delay:number):()=>void {
     const timer=owner.setTimeout(callback,delay);
     return ()=>owner.clearTimeout(timer);
   }
-  // Portable services also run without a DOM (native oracle/model checks).
-  // eslint-disable-next-line no-restricted-globals
+  // Portable services also run without a DOM, where there is no owning window.
   const timer=setTimeout(callback,delay);
-  // eslint-disable-next-line no-restricted-globals
   return ()=>clearTimeout(timer);
 }
