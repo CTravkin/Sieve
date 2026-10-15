@@ -63,7 +63,7 @@ export async function checkProject() {
     }
     assert.doesNotMatch(russian[key], /[ёЁ]/);
   }
-  assert.equal(ru.settings.description, 'Исключает файлы и каталоги перед индексацией хранилища');
+  assert.equal(ru.settings.description, 'Исключает файлы и каталоги перед индексацией хранилища.');
   assert.equal(ru.messages.unsupportedVersion, 'Эта версия Obsidian не поддерживает фильтрацию Sieve');
   for (const locale of [en, ru]) {
     const examples=Object.values(locale.settings.syntaxExamples);

@@ -1,9 +1,9 @@
 {
   "name": "sieve",
-  "version": "0.6.21",
-  "sieveBuild": 34,
+  "version": "1.0.0",
+  "sieveBuild": 35,
   "private": true,
-  "description": "Excludes files and folders before vault indexing",
+  "description": "Excludes files and folders before vault indexing.",
   "type": "module",
   "license": "MPL-2.0",
   "engines": {

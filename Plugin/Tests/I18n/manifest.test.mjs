@@ -5,10 +5,10 @@ import {loadRuntime} from '../Fixtures/load-runtime.mjs';
 const {localizeManifestDescription}=await loadRuntime('ui/manifest-description');
 
 test('loaded manifest descriptions follow RU/EN without changing identity or the original descriptor on disposal',()=>{
-  const manifest={id:'sieve',version:'0.6.16',description:'Excludes files and folders before vault indexing'};
+  const manifest={id:'sieve',version:'0.6.16',description:'Excludes files and folders before vault indexing.'};
   const original=Object.getOwnPropertyDescriptor(manifest,'description');let language='ru';
   const restore=localizeManifestDescription(manifest,()=>language);
-  assert.equal(manifest.description,'Исключает файлы и каталоги перед индексацией хранилища');
+  assert.equal(manifest.description,'Исключает файлы и каталоги перед индексацией хранилища.');
   for(language of ['en','de','fr'])assert.equal(manifest.description,original.value);
   assert.equal(manifest.id,'sieve');assert.equal(manifest.version,'0.6.16');
   restore();assert.deepEqual(Object.getOwnPropertyDescriptor(manifest,'description'),original);
