@@ -1,8 +1,27 @@
+# Local instructions and generated packages
+/AGENTS.md
+/Builds/
+
+# Dependencies and generated test modules
 node_modules/
-dist/
-Local/
-.obsidian/
+.build/
+*.tsbuildinfo
+
+# Local configuration and tool state
 .env
 .env.*
+!.env.example
+.agents/
+.codex/
+.serena/
+.vscode/
+.idea/
+.obsidian/
+
+# Temporary output
 *.log
-*.tsbuildinfo
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+Desktop.ini

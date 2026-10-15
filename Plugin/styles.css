@@ -1,0 +1,63 @@
+.sieve-settings .sieve-settings-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+.sieve-settings .sieve-settings-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  --icon-size: 1em;
+}
+.sieve-settings button:disabled {
+  pointer-events: none;
+}
+.sieve-settings .sieve-rules-setting {
+  flex-direction: column;
+  align-items: stretch;
+}
+.sieve-settings .sieve-rules-setting .setting-item-info {
+  margin-inline-end: 0;
+}
+.sieve-settings .sieve-rules-setting textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  resize: vertical;
+  overflow: auto;
+  white-space: pre;
+  font-family: var(--font-monospace);
+}
+.sieve-settings .sieve-syntax-pattern {
+  font-weight: var(--font-semibold);
+}
+.sieve-settings .sieve-display-name-setting input {
+  width: 24em;
+  max-width: 100%;
+}
+.sieve-settings .sieve-status-warning {
+  color: var(--text-warning);
+  color: color-mix(in srgb, var(--text-warning) 65%, var(--text-normal));
+}
+.sieve-settings .sieve-status-error,
+.sieve-settings .sieve-rule-errors {
+  color: var(--text-error);
+  color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
+  overflow-wrap: anywhere;
+}
+.sieve-syntax-modal {
+  overflow: hidden;
+}
+.sieve-syntax-modal .sieve-syntax-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.sieve-syntax-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.sieve-syntax-footer {
+  flex: 0 0 auto;
+}

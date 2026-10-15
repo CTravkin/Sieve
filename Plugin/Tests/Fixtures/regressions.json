@@ -1,0 +1,86 @@
+[
+  {
+    "name": "seed-51e7e216/89",
+    "rules": "*/[!x]",
+    "paths": [
+      "/😀"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/90",
+    "rules": "(?d)?",
+    "paths": [
+      "ab/😀"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/121",
+    "rules": "(?i)[!x]",
+    "paths": [
+      "md/Σ"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/121",
+    "rules": "(?i)[!x]",
+    "paths": [
+      "/春"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/147",
+    "rules": "(?i)?",
+    "paths": [
+      "a😀/Σ"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/235",
+    "rules": "?",
+    "paths": [
+      "ab/春"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/246",
+    "rules": "(?i)(?d)*/[!x]",
+    "paths": [
+      "/春"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/246",
+    "rules": "(?i)(?d)*/[!x]",
+    "paths": [
+      "/😀"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/246",
+    "rules": "(?i)(?d)*/[!x]",
+    "paths": [
+      "/Σ"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/389",
+    "rules": "(?i)[!x]/*/",
+    "paths": [
+      "春/"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/418",
+    "rules": "[!x]/*/",
+    "paths": [
+      "Σ/"
+    ]
+  },
+  {
+    "name": "seed-51e7e216/418",
+    "rules": "[!x]/*/",
+    "paths": [
+      "𐐀/"
+    ]
+  }
+]

@@ -1,37 +1,99 @@
 # Sieve
 
-[Русский](README.md) · [English](README.en.md)
+Sieve filters files and folders before Obsidian indexes a vault. It keeps generated files, dependency trees and other unwanted content out of the file explorer, search and metadata index, without moving or deleting the original files.
 
-Плагин Obsidian для исключения файлов и каталогов перед индексацией хранилища.
+## Features
 
-## Статус
+- **Early filtering.** Excluded subtrees can be skipped during vault scanning, reducing indexing work in large folders.
+- **Ordered rules.** Syncthing-compatible patterns support include exceptions, directory anchors, case handling and external rule files. The first matching rule wins.
+- **Vault names.** A display name can replace the folder name in vault labels and switching menus without changing the path or vault ID.
+- **Safe configuration.** Rules are checked before saving. One previous working configuration is retained for recovery; without a valid configuration, the vault opens unfiltered with an error notice.
+- **Offline help and localization.** Settings and built-in syntax help use Russian for a Russian Obsidian interface and English for other languages.
 
-Разработка первой версии. Сейчас репозиторий содержит локализации, справку, требования и проверки этих материалов. Движок фильтрации и интерфейс еще не реализованы; устанавливаемого релиза нет.
+## Platforms
 
-## Функции
+Obsidian 1.14.4 or later is required. Desktop behavior has been tested on Windows; the matcher has also been checked against native Syncthing on Linux. macOS, iOS and Android share the portable implementation but have not been verified on devices.
 
-Согласованный объем: ранняя фильтрация с полным синтаксисом Syncthing, подробная справка и отображаемое имя текущего хранилища. Интерфейс будет на английском и русском языках. Требования и ограничения описаны в [Requirements](Docs/Requirements.md).
+Filtering uses Obsidian internals. Unsupported runtime structures leave the vault unfiltered and show a notice.
 
-## Платформы
+## Operations
 
-Целевые платформы — Windows, macOS, Linux, iOS и Android. Фильтрация и интерфейс на них пока не проверены. `minAppVersion: 1.14.4` задает первоначальный целевой минимум, а не подтвержденную совместимость готового плагина.
+### Installation
 
-## Эксплуатация
+Download the plugin ZIP from [GitHub Releases](https://github.com/CTravkin/Sieve/releases) and extract its `sieve` folder into `<vault>/.obsidian/plugins/`. A custom Obsidian configuration directory can be used instead of `.obsidian`.
 
-### Проверка
+Enable Sieve under **Settings → Community plugins**, then reopen the vault. The initial enable happens after the vault has loaded; early filtering begins on the next opening.
 
-Для проверок материалов нужен Node.js 22 или новее. Зависимости устанавливать не требуется.
+For an update, replace the package files while preserving `data.json` and `data.previous.json`.
 
-```powershell
-npm.cmd run check
-npm.cmd test
+### Build
+
+Node.js 22 or later is required. From `Plugin`:
+
+```sh
+npm ci
+npm run build
 ```
 
-На других платформах используйте `npm run check` и `npm test`. Эти команды проверяют структуру переводов, тексты, метаданные версий и локальные Markdown-ссылки. Они не проверяют раннюю фильтрацию или совместимость с Obsidian.
+The installable files are written to `Builds/sieve`. After committing the source, PowerShell 7 can create the verified ZIP:
 
-## Ссылки
+```powershell
+./scripts/package.ps1
+```
 
-- [Синтаксис фильтров](Docs/Syntax.ru.md)
-- [Правила версий и сборок](Docs/Versioning.md)
+The archive name is `Sieve X.Y.Z (build N).zip`. Build output is local and excluded from Git.
 
-Лицензия для публичного выпуска будет выбрана отдельно. Репозиторий остается приватным до отдельного решения владельца.
+### Usage
+
+Add one rule per line under **Settings → Sieve**. For example:
+
+```text
+!important
+*.tmp
+/build
+**/cache
+```
+
+Rules are relative to the vault root. Saving offers a reload; postponing keeps the current rules active until the vault is reopened. Closing settings discards unsaved edits.
+
+Settings can also be edited in `<configDir>/plugins/sieve/data.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "rules": "*.tmp\n/build",
+  "displayName": ""
+}
+```
+
+An empty display name uses the root folder name. Manual rule changes apply after reopening the vault. After disabling Sieve, reopen the vault to restore the ordinary index. Filtering never deletes source files.
+
+### Verification
+
+From `Plugin`:
+
+```sh
+npm run check
+npm run typecheck
+npm run test:regression
+npm run test:core
+npm run test:oracle
+npm run test:package
+```
+
+The native matcher comparison requires Go 1.27.0. Tests use owned temporary directories and clean them after the run. `SIEVE_TEST_TEMP` selects their parent directory; `SIEVE_ORACLE_BINARY` supplies a prebuilt native oracle. Automated checks do not replace testing in Obsidian or on mobile devices.
+
+## Branches
+
+| Branch | Purpose |
+| --- | --- |
+| `dev` | Development |
+| `release` | Published versions and GitHub releases; default branch |
+
+Release tags use `X.Y.Z`; release titles use `Sieve X.Y.Z (build N)`. Each release includes a changelog and the individual Obsidian assets as well as the ZIP.
+
+## Links
+
+- [Filter syntax — English](Docs/Syntax.en.md) · [Русский](Docs/Syntax.ru.md)
+- [MPL-2.0 license](LICENSE)
+- [Third-party notices](Docs/THIRD-PARTY-NOTICES.md)
