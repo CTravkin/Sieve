@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-import {Notice,PluginSettingTab,SettingGroup,getLanguage,setIcon} from 'obsidian';
-import type {App,ButtonComponent,TextAreaComponent,TextComponent} from 'obsidian';
+import {Notice,PluginSettingTab,getLanguage,setIcon} from 'obsidian';
+import type {App,ButtonComponent,Setting,SettingDefinitionItem,SettingGroup,TextAreaComponent,TextComponent} from 'obsidian';
 import type SievePlugin from '../main.ts';
 import type {SettingsError} from '../settings/storage.ts';
 import {defaultSettings,sameSettings} from '../settings/model.ts';
@@ -30,58 +30,90 @@ export class SieveSettingsTab extends PluginSettingTab {
   private validationGeneration=0;
   private help?:SyntaxHelpModal;
   private reloadOffer?:ReloadOfferModal;
+  private renderedRows=0;
   constructor(app:App,private readonly sieve:SievePlugin){super(app,sieve);this.icon='layers';}
-  display():void {
-    this.unsubscribe?.();this.visible=true;
-    if(!this.hydrated)this.draft=this.sieve.draftSettings??defaultSettings();
-    const text=locale(getLanguage()).settings;const container=this.containerEl;container.empty();container.addClass('sieve-settings');
+  getSettingDefinitions():SettingDefinitionItem[] {
+    const text=locale(getLanguage()).settings;
+    // Search metadata is pure. Custom renders retain draft validation and
+    // explicit Save instead of the SDK's automatic control persistence.
+    return [
+      {type:'group',heading:text.title,items:[
+        {name:text.rulesLabel,desc:text.rulesDescription,render:this.renderRow((setting,group)=>{this.decorateHeading(group);this.renderRules(setting);})},
+        {name:text.syntaxLabel,aliases:[text.openHelp],render:this.renderRow(setting=>this.renderSyntax(setting))},
+      ]},
+      {type:'group',items:[{name:text.displayNameLabel,desc:text.displayNameDescription,render:this.renderRow(setting=>this.renderDisplayName(setting))}]},
+      {type:'group',items:[{name:text.statusLabel,aliases:[text.save],render:this.renderRow(setting=>this.renderStatus(setting))}]},
+    ];
+  }
+  private renderRow(render:(setting:Setting,group:SettingGroup)=>void):(setting:Setting,group:SettingGroup)=>()=>void {
+    return (setting,group)=>{
+      this.renderedRows++;this.visible=true;
+      if(!this.hydrated)this.draft=this.sieve.draftSettings??defaultSettings();
+      this.containerEl.addClass('sieve-settings');
+      this.unsubscribe??=this.sieve.subscribeStatus(()=>this.refresh());
+      render(setting,group);this.refresh();
+      let mounted=true;
+      return ()=>{
+        if(!mounted)return;mounted=false;
+        if(this.rules && setting.settingEl.contains(this.rules.inputEl))this.rules=undefined;
+        if(this.displayName && setting.settingEl.contains(this.displayName.inputEl))this.displayName=undefined;
+        if(this.saveButton && setting.settingEl.contains(this.saveButton.buttonEl))this.saveButton=undefined;
+        if(this.statusEl && setting.settingEl.contains(this.statusEl))this.statusEl=undefined;
+        if(this.errorsEl && setting.settingEl.contains(this.errorsEl))this.errorsEl=undefined;
+        if(--this.renderedRows===0){this.visible=false;this.unsubscribe?.();this.unsubscribe=undefined;}
+      };
+    };
+  }
+  private decorateHeading(filterGroup:SettingGroup):void {
     // Host setText stringifies fragments from another window. Pass a string,
     // then decorate only this group's native heading DOM.
-    const filterGroup=new SettingGroup(container).setHeading(text.title);
     const heading=filterGroup.listEl.parentElement?.querySelector<HTMLElement>('.setting-item-heading .setting-item-name');
     if(heading){
       heading.addClass('sieve-settings-heading');heading.setAttr('role','heading');heading.setAttr('aria-level','2');
       const icon=heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}});
       setIcon(icon,this.icon);heading.prepend(icon);
     }
-    filterGroup.addSetting(rulesSetting=>{
-      rulesSetting.setName(text.rulesLabel).setDesc(text.rulesDescription).setClass('sieve-rules-setting');
-      rulesSetting.descEl.setAttr('id','sieve-rules-description');
-      rulesSetting.addTextArea(input=>{
-        this.rules=input;input.setValue(this.draft.rules).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,rules:value}));
+  }
+  private renderRules(rulesSetting:Setting):void {
+    const text=locale(getLanguage()).settings;
+    rulesSetting.setClass('sieve-rules-setting');
+    rulesSetting.descEl.setAttr('id','sieve-rules-description');
+    rulesSetting.addTextArea(input=>{
+      this.rules=input;input.setValue(this.draft.rules).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,rules:value}));
+      input.setPlaceholder(text.rulesPlaceholder);
+      input.inputEl.setAttr('aria-label',text.rulesLabel);input.inputEl.setAttr('aria-describedby','sieve-rules-description sieve-settings-errors');input.inputEl.setAttr('spellcheck','false');input.inputEl.rows=12;input.inputEl.wrap='off';
+      input.inputEl.addEventListener('focus',()=>input.setPlaceholder(''));
+      input.inputEl.addEventListener('blur',event=>{
         input.setPlaceholder(text.rulesPlaceholder);
-        input.inputEl.setAttr('aria-label',text.rulesLabel);input.inputEl.setAttr('aria-describedby','sieve-rules-description sieve-settings-errors');input.inputEl.setAttr('spellcheck','false');input.inputEl.rows=12;input.inputEl.wrap='off';
-        input.inputEl.addEventListener('focus',()=>input.setPlaceholder(''));
-        input.inputEl.addEventListener('blur',event=>{
-          input.setPlaceholder(text.rulesPlaceholder);
-          // A native button click follows blur. Let Save validate authoritatively
-          // instead of disabling the button before that first click can arrive.
-          if(event.relatedTarget===this.saveButton?.buttonEl)return;
-          return this.validateRules();
-        });
-      });
-      this.errorsEl=rulesSetting.settingEl.createEl('div',{cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
-    });
-    filterGroup.addSetting(syntaxSetting=>{
-      syntaxSetting.setName(text.syntaxLabel).addButton(button=>button.setButtonText(text.openHelp).onClick(()=>{this.help?.close();this.help=new SyntaxHelpModal(this.app);this.help.open();}));
-      syntaxSetting.descEl.addClass('sieve-syntax-examples');
-      for(const example of Object.values(text.syntaxExamples)){
-        const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
-        row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:' '+example.description});
-      }
-    });
-    new SettingGroup(container).addSetting(nameSetting=>{
-      nameSetting.setName(text.displayNameLabel).setDesc(text.displayNameDescription).setClass('sieve-display-name-setting');
-      nameSetting.descEl.setAttr('id','sieve-display-name-description');
-      nameSetting.addText(input=>{
-        this.displayName=input;input.setValue(this.draft.displayName).setPlaceholder(this.app.vault.getName()).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,displayName:value}));input.inputEl.setAttr('aria-label',text.displayNameLabel);input.inputEl.setAttr('aria-describedby','sieve-display-name-description');
+        // A native button click follows blur. Let Save validate authoritatively
+        // instead of disabling the button before that first click can arrive.
+        if(event.relatedTarget===this.saveButton?.buttonEl)return;
+        return this.validateRules();
       });
     });
-    new SettingGroup(container).addSetting(saveSetting=>{
-      saveSetting.setName(text.statusLabel).addButton(button=>{this.saveButton=button;button.setButtonText(text.save).setCta().setDisabled(this.saving).onClick(()=>this.save());});
-      this.statusEl=saveSetting.descEl;this.statusEl.addClass('sieve-status');this.statusEl.setAttr('role','status');this.statusEl.setAttr('aria-live','polite');this.statusEl.setAttr('aria-atomic','true');
+    this.errorsEl=rulesSetting.settingEl.createEl('div',{cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
+  }
+  private renderSyntax(syntaxSetting:Setting):void {
+    const text=locale(getLanguage()).settings;
+    syntaxSetting.addButton(button=>button.setButtonText(text.openHelp).onClick(()=>{this.help?.close();this.help=new SyntaxHelpModal(this.app);this.help.open();}));
+    syntaxSetting.descEl.addClass('sieve-syntax-examples');
+    for(const example of Object.values(text.syntaxExamples)){
+      const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
+      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:' '+example.description});
+    }
+  }
+  private renderDisplayName(nameSetting:Setting):void {
+    const text=locale(getLanguage()).settings;
+    nameSetting.setClass('sieve-display-name-setting');
+    nameSetting.descEl.setAttr('id','sieve-display-name-description');
+    nameSetting.addText(input=>{
+      this.displayName=input;input.setValue(this.draft.displayName).setPlaceholder(this.app.vault.getName()).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,displayName:value}));input.inputEl.setAttr('aria-label',text.displayNameLabel);input.inputEl.setAttr('aria-describedby','sieve-display-name-description');
     });
-    this.unsubscribe=this.sieve.subscribeStatus(()=>this.refresh());this.refresh();
+  }
+  private renderStatus(saveSetting:Setting):void {
+    const text=locale(getLanguage()).settings;
+    saveSetting.addButton(button=>{this.saveButton=button;button.setButtonText(text.save).setCta().setDisabled(this.saving).onClick(()=>this.save());});
+    this.statusEl=saveSetting.descEl;this.statusEl.addClass('sieve-status');this.statusEl.setAttr('role','status');this.statusEl.setAttr('aria-live','polite');this.statusEl.setAttr('aria-atomic','true');
   }
   private edit(draft:SieveSettings):void {
     if(this.saving||!this.visible||!this.hydrated||['loading','disposed'].includes(this.sieve.getStatus().status))return;
@@ -149,6 +181,7 @@ export class SieveSettingsTab extends PluginSettingTab {
   hide():void {
     this.visible=false;this.generation++;this.validationGeneration++;this.hydrated=false;this.saveError=undefined;this.validationError=undefined;this.dismissedStatusError=undefined;
     this.unsubscribe?.();this.unsubscribe=undefined;this.help?.close();this.help=undefined;this.reloadOffer?.close();this.reloadOffer=undefined;
+    this.rules=undefined;this.displayName=undefined;this.saveButton=undefined;this.statusEl=undefined;this.errorsEl=undefined;
     this.sieve.resetDraftSettings();this.draft=this.sieve.draftSettings??defaultSettings();this.displayedBaseline=this.draft;this.observedSaved=this.sieve.savedSettings;
   }
 }

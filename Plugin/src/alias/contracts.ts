@@ -15,5 +15,5 @@ export interface AliasApp {
   vault:{configDir:string;getName?:()=>string};
   appId?:string;title?:string;getAppTitle?:(...args:unknown[])=>unknown;
   commands?:{commands?:Record<string,{callback?:unknown}>};
-  workspace:{onLayoutReady:(callback:()=>void)=>unknown;on?:(event:string,callback:(...args:any[])=>void)=>unknown;offref?:(ref:any)=>void};
+  workspace:{onLayoutReady:(callback:()=>void)=>unknown;on?:(event:string,callback:(...args:unknown[])=>void)=>unknown;offref?:(ref:unknown)=>void};
 }

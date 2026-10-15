@@ -6,6 +6,38 @@ import {fakeHost} from '../Fixtures/host-adapter.mjs';
 import {uiSdk,element,resetUi} from '../Fixtures/ui-host.mjs';
 const {default:SievePlugin}=await loadRuntime('main',uiSdk);
 
+test('search definitions expose both editable fields without saving or starting a UI session',async()=>{
+  const h=await setup();try{
+    h.tab.hide();const writes=h.writes.length;
+    assert.equal(typeof h.tab.getSettingDefinitions,'function');
+    const definitions=h.tab.getSettingDefinitions().flatMap(group=>group.items??[group]);
+    assert.deepEqual(definitions.map(item=>item.name),['Filter rules','Syntax','Vault display name','Status']);
+    assert.ok(definitions.every(item=>typeof item.render==='function'&&!item.control),'custom renders preserve explicit Save');
+    assert.equal(h.writes.length,writes);
+    h.tab.display();element(h.tab.containerEl,'textarea').change('New rules');await element(h.tab.containerEl,'textarea').blur();
+    assert.equal(h.writes.length,writes);await element(h.tab.containerEl,'button','Save').click();assert.equal(h.plugin.savedSettings.rules,'New rules');
+  }finally{h.tab.hide();h.plugin.onunload();}
+});
+
+test('declarative rerender keeps an unsaved draft and close discards it',async()=>{
+  const h=await setup();try{
+    assert.equal(typeof h.tab.getSettingDefinitions,'function');
+    element(h.tab.containerEl,'textarea').change('Draft across update');
+    h.tab.display();assert.equal(element(h.tab.containerEl,'textarea').value,'Draft across update');assert.equal(h.writes.length,0);
+    h.tab.hide();h.tab.display();assert.equal(element(h.tab.containerEl,'textarea').value,'Technical');assert.equal(h.writes.length,0);
+  }finally{h.tab.hide();h.plugin.onunload();}
+});
+
+test('removing a rules row stops updates to its detached controls while other rows stay mounted',async()=>{
+  const h=await setup();try{
+    const removed=element(h.tab.containerEl,'textarea');h.tab.renderCleanup[0]();
+    let updates=0;removed.setAttr=()=>{updates++;};
+    element(h.tab.containerEl,'input').change('Changed name');
+    assert.equal(updates,0,'removed rule controls must not receive status updates');
+    assert.equal(h.plugin.draftSettings.displayName,'Changed name');assert.equal(h.writes.length,0);
+  }finally{h.tab.hide();h.plugin.onunload();}
+});
+
 async function setup({late=false,rule='Technical',broken=false,fallback=false,unsupported=false}={}){
   resetUi();const host=fakeHost();host.app.vault.getName=()=> 'Vault folder';if(late){await host.app.vault.load();host.layout();}
   const data=new Map([['.custom/plugins/sieve/data.json',JSON.stringify({schemaVersion:1,rules:rule,displayName:'Demo'})]]);const writes=[];

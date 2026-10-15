@@ -4,6 +4,7 @@ import {sha256} from '../core/normalize.ts';
 import type {CompileResult,Diagnostic,Platform} from '../core/types.ts';
 import {defaultSettings,parseSettings,parseSnapshot,sameSettings,encodeBytes,decodeBytes} from './model.ts';
 import type {SieveSettings,WorkingSnapshot,CapturedInclude} from './model.ts';
+import {scheduleTimeout} from '../platform/timer.ts';
 
 export interface SettingsIO { exists(path:string):Promise<boolean>; read(path:string):Promise<string>; write(path:string,value:string):Promise<unknown> }
 export interface SettingsError { readonly code:'read'|'json'|'schema'|'rules'|'write'|'timeout'|'cancelled'; readonly diagnostics?:readonly Diagnostic[] }
@@ -46,9 +47,9 @@ export class SettingsService {
   private deadline():number {return performance.now()+(this.options.timeoutMs??10000);}
   private async wait<T>(operation:Promise<T>,deadline:number):Promise<T> {
     this.check();const remaining=deadline-performance.now();if(remaining<=0)throw failure('timeout');
-    let timer:ReturnType<typeof setTimeout>|undefined;
-    try {const result=await Promise.race([operation,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(failure('timeout')),remaining);})]);this.check();return result;}
-    finally {if(timer!==undefined)clearTimeout(timer);}
+    let cancel:(()=>void)|undefined;
+    try {const result=await Promise.race([operation,new Promise<never>((_,reject)=>{cancel=scheduleTimeout(()=>reject(failure('timeout')),remaining);})]);this.check();return result;}
+    finally {cancel?.();}
   }
   private async readJson(path:string,deadline:number):Promise<unknown> {
     try {

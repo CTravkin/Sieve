@@ -19,12 +19,22 @@ export class Element {
   get textContent(){return this._text+this.children.map(el=>el.textContent).join(' ');}
   set textContent(text){this._text=text;this.children=[];}
   descendants(){return this.children.flatMap(el=>[el,...el.descendants()]);}
+  contains(element){return element===this||this.descendants().includes(element);}
 }
 // Host setText uses realm-local instanceof checks (Obsidian enhance.js).
 class DocumentFragment extends Element{toString(){return '[object DocumentFragment]';}}
 class ForeignDocumentFragment extends Element{toString(){return '[object DocumentFragment]';}}
 export class Plugin {constructor(app){this.app=app;this.settingTabs=[];}addSettingTab(tab){this.settingTabs.push(tab);}}
-export class PluginSettingTab {constructor(app,plugin){this.app=app;this.plugin=plugin;this.containerEl=new Element();}}
+export class PluginSettingTab {
+  constructor(app,plugin){this.app=app;this.plugin=plugin;this.containerEl=new Element();this.renderCleanup=[];}
+  display(){
+    for(const cleanup of this.renderCleanup)cleanup();this.renderCleanup=[];this.containerEl.empty();
+    for(const definition of this.getSettingDefinitions()){
+      const group=new SettingGroup(this.containerEl);if(definition.heading)group.setHeading(definition.heading);
+      for(const item of definition.items??[definition])group.addSetting(setting=>{setting.setName(item.name).setDesc(item.desc??'');const cleanup=item.render(setting,group);if(cleanup)this.renderCleanup.push(cleanup);});
+    }
+  }
+}
 export class Component {load(){this.loaded=true;}unload(){this.loaded=false;this.unloaded=true;}}
 export class Modal {
   constructor(app){this.app=app;this.contentEl=new Element();this.modalEl=new Element();this.titleEl=new Element();}

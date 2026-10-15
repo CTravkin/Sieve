@@ -63,11 +63,12 @@ export function installAliases(app:AliasApp,provider:AliasProvider,current:()=>s
       const observer=new Observer(()=>{if(alive && docs.has(doc))refresh();});observer.observe(doc.querySelector('title')!,{childList:true,subtree:true,characterData:true});resources.add(()=>observer.disconnect());
     }
   }
-  const document=options.document??(typeof globalThis.document==='object'?globalThis.document:undefined);if(document)attach(document);
+  const document=options.document??(typeof window==='object'?window.document:undefined);if(document)attach(document);
   if(app.workspace.on && app.workspace.offref){
     const change=app.workspace.on('layout-change',refresh);cleanup.add(()=>app.workspace.offref!(change));
-    const opened=app.workspace.on('window-open',(_workspace,window:Window)=>{if(window?.document){attach(window.document);refresh();}});cleanup.add(()=>app.workspace.offref!(opened));
-    const closed=app.workspace.on('window-close',(_workspace,window:Window)=>{if(window?.document)documentCleanup.get(window.document)?.();});cleanup.add(()=>app.workspace.offref!(closed));
+    const eventDocument=(value:unknown):Document|undefined=>{const doc=(value as {document?:Document}|null)?.document;return doc&&typeof doc.querySelectorAll==='function'?doc:undefined;};
+    const opened=app.workspace.on('window-open',(_workspace,value)=>{const doc=eventDocument(value);if(doc){attach(doc);refresh();}});cleanup.add(()=>app.workspace.offref!(opened));
+    const closed=app.workspace.on('window-close',(_workspace,value)=>{const doc=eventDocument(value);if(doc)documentCleanup.get(doc)?.();});cleanup.add(()=>app.workspace.offref!(closed));
   }
   refresh();
   return {get capabilities():AliasCapabilities{return Object.freeze({...capabilities,commands:Object.freeze([...capabilities.commands])});},refresh,dispose(){
