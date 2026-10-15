@@ -17,6 +17,7 @@ const encode = (s: string): string => {
   for (let offset=0;offset<bytes.length;offset+=8192) result += String.fromCharCode(...bytes.subarray(offset,offset+8192));
   return result;
 };
+export {encode as encodeGlobPath};
 const byteLength = (r: number): number => r < 0x80 ? 1 : r < 0x800 ? 2 : r < 0x10000 ? 3 : 4;
 
 // Go DecodeRuneInString returns RuneError with width 1 for each invalid byte.
@@ -592,7 +593,7 @@ function parse(pattern: string): Node {
   return root;
 }
 
-export function compileGlob(pattern: string): (path: string) => boolean {
+export function compileGlob(pattern: string): (path: string, encodedPath?: string) => boolean {
   const glob = compile(parse(pattern));
-  return path => matches(glob, encode(path));
+  return (path, encodedPath) => matches(glob, encodedPath ?? encode(path));
 }

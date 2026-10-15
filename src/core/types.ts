@@ -55,5 +55,6 @@ export interface CompiledPattern {
   readonly deletable: boolean;
   readonly caseFolded: boolean;
   readonly allowsSkipping: boolean;
-  readonly test: (path: string) => boolean;
+  /** Optional UTF-8 byte string prepared from this exact path by the matcher. */
+  readonly test: (path: string, encodedPath?: string) => boolean;
 }

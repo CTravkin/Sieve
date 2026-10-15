@@ -2,6 +2,7 @@
 // This Source Code Form is subject to the Mozilla Public License 2.0.
 // https://mozilla.org/MPL/2.0/ ; see THIRD-PARTY-NOTICES.md.
 import { foldCase, sha256, toSlash } from './normalize.ts';
+import { encodeGlobPath } from './glob.ts';
 import { parseRules, patternString, RuleError } from './parser.ts';
 import type { CompileContext, CompileResult, MatchResult } from './types.ts';
 export type { CompileContext, CompileResult, Diagnostic, IncludeDependency, Matcher, MatchResult, Platform } from './types.ts';
@@ -22,11 +23,12 @@ export async function compileRules(text: string, context: CompileContext): Promi
         const internal = ['.stfolder', '.stignore', '.stversions'].some(p => path === p || path.startsWith(p + '/'));
         if (temporary || internal) return Object.freeze({ ignored: true, deletable: false, caseFolded: context.platform === 'windows' || context.platform === 'darwin' || context.platform === 'ios', canSkipDir: true });
         if (path === '.') return included;
-        let lower: string | undefined; let canSkipDir = true;
+        let lower: string | undefined; let encoded: string | undefined; let encodedLower: string | undefined; let canSkipDir = true;
         for (const pattern of patterns) {
           if (canSkipDir && !pattern.allowsSkipping) canSkipDir = false;
-          if (pattern.caseFolded) lower ??= foldCase(path);
-          if (pattern.test(pattern.caseFolded ? lower! : path)) {
+          if (pattern.caseFolded) {lower ??= foldCase(path);encodedLower ??= encodeGlobPath(lower);}
+          else encoded ??= encodeGlobPath(path);
+          if (pattern.test(pattern.caseFolded ? lower! : path, pattern.caseFolded ? encodedLower! : encoded!)) {
             return Object.freeze({ ignored: pattern.ignored, deletable: pattern.ignored && pattern.deletable, caseFolded: pattern.caseFolded, canSkipDir: pattern.ignored && canSkipDir });
           }
         }
