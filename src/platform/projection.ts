@@ -9,6 +9,18 @@ export function installProjection(app:RuntimeApp,adapter:PrivateAdapter,ignored:
   const returning=new WeakMap<NativeFile,boolean>();
   let removing:{file:NativeFile;deleted:boolean;path:string}|undefined;
   const indexed=(key:string):NativeFile|undefined=>Object.prototype.hasOwnProperty.call(vault.fileMap,key)?vault.fileMap[key]:undefined;
+  let startupPruning=0;
+  wrap(metadata,'deletePath',(original,args)=>{
+    const startup=metadata.initialized===false && typeof args[0]==='string' && !indexed(args[0]);
+    if(startup)startupPruning++;
+    try{return original.apply(metadata,args);}finally{if(startup)startupPruning--;}
+  });
+  wrap(metadata,'updateRelatedLinks',(original,args)=>{
+    // Native initialize queues every retained file after preload. Rescanning
+    // that same cache for each discarded path is redundant and quadratic.
+    // Keep native deletion, persistence and queue barriers; runtime updates pass.
+    if(startupPruning===0)return original.apply(metadata,args);
+  });
   const publishable=(file:NativeFile):boolean=>indexed(file.path)===file && !ignored(adapter.files[file.path]?.realpath??file.path);
   const restore=(key:string):NativeFile|undefined=>{
     const entry=hidden.get(key);if(!entry)return;

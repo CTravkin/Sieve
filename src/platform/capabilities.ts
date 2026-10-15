@@ -3,7 +3,7 @@ export function patchable(owner:object,key:string):boolean {const d=Object.getOw
 export function capabilities(app:RuntimeApp,mobile:boolean):{adapter:PrivateAdapter;keys:string[]}|undefined {
   if(!app?.vault?.adapter || typeof app.vault.adapter!=='object' || !app.workspace || typeof app.workspace.onLayoutReady!=='function' || typeof app.vault.load!=='function' || !patchable(app.vault,'load'))return;
   const vault=app.vault;const metadata=app.metadataCache;
-  if(!vault.fileMap || typeof vault.fileMap!=='object' || !['onChange','addChild','removeChild','trigger'].every(k=>typeof vault[k]==='function') || !patchable(vault,'trigger') || !metadata || !['onDelete','deletePath','computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>typeof metadata[k]==='function') || !['computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>patchable(metadata,k)))return;
+  if(!vault.fileMap || typeof vault.fileMap!=='object' || !['onChange','addChild','removeChild','trigger'].every(k=>typeof vault[k]==='function') || !patchable(vault,'trigger') || !metadata || typeof metadata.initialized!=='boolean' || !['onDelete','updateRelatedLinks','deletePath','computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>typeof metadata[k]==='function') || !['deletePath','updateRelatedLinks','computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>patchable(metadata,k)))return;
   const lookup=metadata.uniqueFileLookup;
   if(!lookup || typeof lookup!=='object' || !['add','remove'].every(k=>typeof (lookup as Record<string,unknown>)[k]==='function' && patchable(lookup,k)))return;
   const adapter=app.vault.adapter as PrivateAdapter;

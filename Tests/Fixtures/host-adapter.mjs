@@ -51,13 +51,13 @@ export function fakeHost(mobile=false,paths=['Technical/secret.md','notes/public
   };
   const lookup=new Map();
   const workQueue={promise:Promise.resolve(),queue(callback){const result=this.promise.then(callback,callback);this.promise=result;return result;}};
-  const metadataCache={fileCache:{},metadataCache:{},resolvedLinks:{},unresolvedLinks:{},workQueue,pending:[],events:[],errors:[],counters:{queue:[],reads:[],parses:[]},uniqueFileLookup:{
+  const metadataCache={initialized:false,fileCache:{},metadataCache:{},resolvedLinks:{},unresolvedLinks:{},workQueue,pending:[],events:[],errors:[],counters:{queue:[],reads:[],parses:[],related:[]},uniqueFileLookup:{
     add(name,file){const entries=lookup.get(name)??new Set();entries.add(file);lookup.set(name,entries);},
     remove(name,file){const entries=lookup.get(name);entries?.delete(file);if(entries?.size===0)lookup.delete(name);},
   },
     trigger(type,...args){this.events.push([type,...args]);},
     saveFileCache(path,value){if(value){this.fileCache[path]=value;metadata.set(path,value);}else {delete this.fileCache[path];metadata.delete(path);}},
-    queueFileForLinkResolution(file){if(file){this.events.push(['queue',file]);const cache=this.fileCache[file.path];const data=cache&&this.metadataCache[cache.hash];if(data)this.resolvedLinks[file.path]=Object.fromEntries(data.links.map(link=>[link,1]));}},
+    queueFileForLinkResolution(file){this.events.push(['queue',file]);if(file){const cache=this.fileCache[file.path];const data=cache&&this.metadataCache[cache.hash];if(data)this.resolvedLinks[file.path]=Object.fromEntries(data.links.map(link=>[link,1]));}},
     computeFileMetadataAsync(file){
       if(!(file instanceof File))return;this.uniqueFileLookup.add(file.name.toLowerCase(),file);const path=file.path;const stat=file.stat??{mtime:0,size:0};let cached=this.fileCache[path];
       if(cached&&cached.mtime===stat.mtime&&cached.size===stat.size&&this.metadataCache[cached.hash]){this.queueFileForLinkResolution(file);return;}
@@ -65,12 +65,13 @@ export function fakeHost(mobile=false,paths=['Technical/secret.md','notes/public
       this.counters.queue.push(path);
       const task=this.workQueue.queue(async()=>{try{this.counters.reads.push(file.path);const bytes=(await vault.readBinary(file)).slice();this.onRead?.(file,bytes);await this.gate;const hash=[...bytes].join(',');let data=this.metadataCache[hash];if(!data){this.counters.parses.push(file.path);data={links:[...new TextDecoder().decode(bytes).matchAll(/\[\[([^\]]+)\]\]/g)].map(match=>match[1])};}Object.assign(cached,{mtime:stat.mtime,size:stat.size,hash});this.saveFileCache(path,cached);this.metadataCache[hash]=data;this.queueFileForLinkResolution(file);this.trigger('changed',file,bytes,data);}catch(error){this.errors.push(error.code??'read-failed');}});this.pending.push(task);
     },
-    deletePath(path){delete this.resolvedLinks[path];delete this.unresolvedLinks[path];this.saveFileCache(path,null);this.queueFileForLinkResolution(null);},
+    updateRelatedLinks(names){this.counters.related.push(names);},
+    deletePath(path){delete this.resolvedLinks[path];delete this.unresolvedLinks[path];this.saveFileCache(path,null);this.updateRelatedLinks([path.slice(path.lastIndexOf('/')+1)]);this.queueFileForLinkResolution(null);},
     onDelete(file){if(file instanceof File){this.uniqueFileLookup.remove(file.name.toLowerCase(),file);this.trigger('deleted',file);this.deletePath(file.path);}},
     onRename(file,old){if(file instanceof File){this.uniqueFileLookup.remove(old.slice(old.lastIndexOf('/')+1).toLowerCase(),file);this.uniqueFileLookup.add(file.name.toLowerCase(),file);for(const map of [this.resolvedLinks,this.unresolvedLinks])if(Object.hasOwn(map,old)){map[file.path]=map[old];delete map[old];}if(Object.hasOwn(this.fileCache,old)){this.saveFileCache(file.path,this.fileCache[old]);this.saveFileCache(old,null);}this.queueFileForLinkResolution(null);}},
     onCreate(file){this.computeFileMetadataAsync(file);},
     watchVaultChanges(){vault.on('create',this.onCreate.bind(this));vault.on('modify',this.computeFileMetadataAsync.bind(this));vault.on('rename',this.onRename.bind(this));vault.on('delete',this.onDelete.bind(this));vault.on('external-watch',this.computeFileMetadataAsync.bind(this));},
-    initialize(){if(this.initialized)return;for(const file of Object.values(vault.fileMap))this.computeFileMetadataAsync(file);this.initialized=true;this.watchVaultChanges();},
+    initialize(){if(this.initialized)return;for(const path of Object.keys(this.fileCache))if(!Object.hasOwn(vault.fileMap,path))this.deletePath(path);for(const file of Object.values(vault.fileMap))this.computeFileMetadataAsync(file);this.initialized=true;this.watchVaultChanges();},
     async drain(){await this.workQueue.promise;this.pending.length=0;},
   };
   // Native FileExplorer uses path keys, even though each item retains a TFile.

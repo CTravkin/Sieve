@@ -6,6 +6,22 @@ const {compileRules}=await loadRuntime('core/matcher');
 const {installFilter}=await loadRuntime('platform/lifecycle');
 async function install(host,rules){const result=await compileRules(rules,{platform:'linux'});assert.equal(result.ok,true);return installFilter(host.app,result.matcher,host.adapter.fs?'android':'linux');}
 
+test('startup stale metadata cleanup avoids repeated related-link rescans while retaining native deletion and visible resolution',async()=>{
+  const host=fakeHost(false,['notes/public.md','Technical/hidden.md']);
+  for(let i=0;i<10000;i++){
+    const path=`Technical/old-${i}.md`;host.metadataCache.fileCache[path]={mtime:0,size:0,hash:'old'};
+    host.metadataCache.resolvedLinks[path]={};host.metadataCache.unresolvedLinks[path]={};
+  }
+  const hook=await install(host,'Technical');await host.app.vault.load();host.layout();await host.metadataCache.drain();
+  assert.equal(hook.phase,'applied');assert.deepEqual(Object.keys(host.metadataCache.fileCache),['notes/public.md']);
+  assert.deepEqual(Object.keys(host.metadataCache.resolvedLinks),['notes/public.md']);assert.deepEqual(Object.keys(host.metadataCache.unresolvedLinks),[]);
+  assert.ok(host.metadataCache.events.some(([kind,file])=>kind==='queue'&&file?.path==='notes/public.md'));
+  assert.ok(host.metadataCache.events.some(([kind,file])=>kind==='queue'&&file===null),'native deletion still queues its barrier');
+  assert.equal(host.metadataCache.counters.related.length,0,'every retained file is already queued by native initialization');
+  host.metadataCache.deletePath('notes/public.md');assert.equal(host.metadataCache.counters.related.length,1,'normal runtime deletion must still refresh related links');
+  hook.dispose();host.metadataCache.initialized=false;host.metadataCache.deletePath('Technical/after-unload.md');assert.equal(host.metadataCache.counters.related.length,2);
+});
+
 for(const mobile of [false,true])test(`${mobile?'mobile':'desktop'} startup prunes before IO, preserves direct access and config, claims applied only after traversal/layout`,async()=>{
   const host=fakeHost(mobile,['Technical/secret.md','notes/public.md','.custom/plugins/sieve/data.json']);const originalBytes=host.physical.get('Technical/secret.md').content;
   const hook=await install(host,'Technical\n.custom');assert.equal(hook.status,'ready');assert.equal(hook.phase,'pending');
