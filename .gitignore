@@ -1,176 +1,27 @@
-# Personal project baseline. Copy to a Git repository root and adapt
-# the policy blocks to its AGENTS.md. Existing allowlists and tracked
-# application configuration are project-specific.
-# Sources and assembly notes: active CODEX_HOME/Templates/README.md.
+# Local instructions and generated packages
+/AGENTS.md
+/Builds/
 
-# Optional repository boundary
-# Keep an existing project allowlist here, before the common exclusions.
-# This baseline does not prescribe which source trees may be published.
+# Dependencies and generated test modules
+node_modules/
+.build/
+*.tsbuildinfo
 
-# Project-root local materials
-# Adjust this block when a listed directory is intentionally published.
-/Docs/
-/Work/
-/Plans/
-/Dev/
-/QA/
-/Review/
-/Ops/
-/Local/
-/Backups/
-/Output/
-/Meetings/
-/Archive/
-
-# Local environment files
-# Shared runtime profiles require explicit project exceptions below.
+# Local configuration and tool state
 .env
 .env.*
-*.env
-*.local
 !.env.example
-!.env.*.example
-!*.example.env
-
-# Local AI instructions and tool configuration
-# This is a local-storage policy. Adapt it when instructions/settings are shared.
-AGENTS.md
-AGENTS.override.md
-CLAUDE.md
-CLAUDE.local.md
-CODEX.md
-GEMINI.md
-LOCAL_DEV.md
 .agents/
-.claude/
 .codex/
-.codex-tmp/
-.cursor/
-.gemini/
 .serena/
-.superpowers/
-.windsurf/
-.worktrees/
-**/docs/superpowers/
-/.github/copilot-instructions.md
-/.github/instructions/
-.cursorignore
-.cursorrules
-.windsurfrules
-
-# Personal IDE/editor configuration and generated state
-# Shared project settings require adapting this policy block.
-.fleet/
-.history/
-.idea/
-.settings/
-.sonarlint/
-.vs/
 .vscode/
-.zed/
-*.sln.docstates
-*.sublime-workspace
-*.suo
-*.user
-*.userosscache
-*.swp
-*.swo
-*.swn
+.idea/
+.obsidian/
 
-# JavaScript/TypeScript dependencies and tool caches
-node_modules/
-.pnpm-store/
-.npm/
-**/.yarn/unplugged/
-**/.yarn/install-state.gz
-.next/
-.nuxt/
-.svelte-kit/
-**/.angular/cache/
-**/.nx/cache/
-**/.nx/workspace-data/
-.turbo/
-.parcel-cache/
-.sass-cache/
-.vercel/
-.netlify/
-.eslintcache
-.stylelintcache
-*.tsbuildinfo
-vite.config.*.timestamp*
-vitest.config.*.timestamp*
-
-# Python environments, bytecode and tool caches
-__pycache__/
-*.pyc
-*.pyo
-*$py.class
-*.egg-info/
-.eggs/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.pytype/
-.hypothesis/
-.tox/
-.nox/
-.venv/
-venv/
-__pypackages__/
-.ipynb_checkpoints/
-.coverage
-.coverage.*
-
-# Native tool caches
-.cache/
-.gradle/
-.kotlin/
-.dart_tool/
-.terraform/
-
-# Logs and root-level generated temporary output
+# Temporary output
 *.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-/logs/
-/tmp/
-/temp/
-/coverage/
-/htmlcov/
-
-# OS/editor temporary files
-.DS_Store
-._*
-[Dd]esktop.ini
-[Tt]humbs.db
-ehthumbs.db
-*~
-*.bak
-*.temp
 *.tmp
-
-# Project-specific generated output and exceptions
-# Add actual build, upload, database, exported-config and secret paths here.
-# Generic build/, dist/, bin/, out/, target/, vendor/ and Tools/ are
-# intentionally not excluded: these names may contain project source.
-# Native project files and dependency lockfiles remain eligible for tracking.
-# Example adaptations, enable only when they match the project policy:
-# /path/to/application/dist/
-# /path/to/application/build/
-# /path/to/application/bin/
-# /path/to/application/obj/
-# /path/to/application/target/
-# /path/to/application/uploads/
-# !/path/to/application/.env.dev
-# !/path/to/application/.env.test
-# !/path/to/application/.env.prod
-
-# Sieve application policy: shipped docs and application instructions are shared.
-!/Docs/
-!/Docs/**
-!/AGENTS.md
-/dist/
-/.obsidian/
+*.temp
+.DS_Store
+Thumbs.db
+Desktop.ini
