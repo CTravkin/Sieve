@@ -7,9 +7,12 @@ import type {Matcher,Platform} from '../core/types.ts';
 
 export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,options:FilterOptions={}):FilterInstallation {
   let active=true;let phase:RuntimePhase='pending';let started=false;let completed=false;let listed=false;let listCompleted=false;let layout=app.workspace?.layoutReady===true;
+  // Rules and platform are immutable for this installation. Keep exact real
+  // paths distinct (including case/NBSP), and bound retained decisions by FIFO.
+  const decisions=new Map<string,ReturnType<Matcher['match']>>();
   const restores:(()=>void)[]=[];
   const notify=():void=>{try{options.onChange?.();}catch{/* Status observers never own filesystem control flow. */}};
-  const deactivate=(next:RuntimePhase):void=>{if(!active)return;active=false;phase=next;for(const restore of restores.reverse())try{restore();}catch{/* A foreign descriptor may prevent restoration; retained own guards are inert. */}notify();};
+  const deactivate=(next:RuntimePhase):void=>{if(!active)return;active=false;phase=next;decisions.clear();for(const restore of restores.reverse())try{restore();}catch{/* A foreign descriptor may prevent restoration; retained own guards are inert. */}notify();};
   const dispose=():void=>deactivate('disposed');
   const result=(status:FilterInstallation['status'],reloadNeeded=false):FilterInstallation=>({get status(){return phase==='error'?'error':status;},get phase(){return phase;},get reloadNeeded(){return reloadNeeded||phase==='error';},get initialStarted(){return started;},get initialCompleted(){return completed;},get layoutReady(){return layout;},dispose});
   const mobile=platform==='android'||platform==='ios';
@@ -21,7 +24,13 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
   let renamesInFlight=0;
   const changed=():void=>{if(active && phase!=='error' && started && completed && listed && listCompleted && layout)phase='applied';if(active)notify();};
   const failed=():void=>deactivate('error');
-  const decide=(real:string)=>{const path=hostClean(real);return path==='/'||within(hostKey(path),config)?{ignored:false,canSkipDir:false}:matcher.match(matchPath(path,platform));};
+  const decide=(real:string)=>{
+    const previous=decisions.get(real);if(previous)return previous;
+    const path=hostClean(real);if(path==='/'||within(hostKey(path),config))return {ignored:false,canSkipDir:false};
+    const decision=matcher.match(matchPath(path,platform));
+    if(decisions.size>=8192)decisions.delete(decisions.keys().next().value!);
+    decisions.set(real,decision);return decision;
+  };
   const realFor=(key:string):string=>cached(key)?.realpath??key;
   const mark=(key:string,add:boolean):void=>{
     if(key==='/' || (add?kept.has(key):!kept.has(key)))return;

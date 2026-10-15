@@ -6,6 +6,31 @@ const {compileRules}=await loadRuntime('core/matcher');
 const {installFilter}=await loadRuntime('platform/lifecycle');
 async function install(host,rules){const result=await compileRules(rules,{platform:'linux'});assert.equal(result.ok,true);return installFilter(host.app,result.matcher,host.adapter.fs?'android':'linux');}
 
+test('startup shares immutable path decisions across adapter, projection and parent checks',async()=>{
+  const paths=Array.from({length:100},(_,i)=>`notes/deep/group-${i%5}/entry-${i}.md`);
+  const host=fakeHost(false,[...paths,'Technical/private.md']);const compiled=await compileRules('Technical',{platform:'linux'});
+  assert.equal(compiled.ok,true);const calls=new Map();
+  const matcher={match(path){calls.set(path,(calls.get(path)??0)+1);return compiled.matcher.match(path);}};
+  const hook=installFilter(host.app,matcher,'linux');await host.app.vault.load();host.layout();await host.metadataCache.drain();
+  assert.equal(hook.phase,'applied');for(const path of paths)assert.ok(host.indexed.has(path));
+  assert.equal(host.indexed.has('Technical/private.md'),false);
+  for(const [path,count] of calls)assert.equal(count,1,`Repeated matching for ${path}`);
+  await host.adapter.rename(paths[0],'Technical/entry-0.md');assert.equal(host.indexed.has('Technical/entry-0.md'),false);
+  await host.adapter.rename('Technical/entry-0.md',paths[0]);assert.ok(host.indexed.has(paths[0]));
+  hook.dispose();
+});
+
+test('decision reuse stays bounded and belongs to its filter installation',async()=>{
+  const host=fakeHost(false,[]);const compiled=await compileRules('Technical',{platform:'linux'});assert.equal(compiled.ok,true);
+  const calls=new Map();const matcher={match(path){calls.set(path,(calls.get(path)??0)+1);return compiled.matcher.match(path);}};
+  const hook=installFilter(host.app,matcher,'linux');
+  for(let i=0;i<10000;i++)host.adapter.trigger('raw',`Technical/entry-${i}.md`);
+  host.adapter.trigger('raw','Technical/entry-9999.md');assert.equal(calls.get('Technical/entry-9999.md'),1,'recent paths should be reused');
+  host.adapter.trigger('raw','Technical/entry-0.md');assert.equal(calls.get('Technical/entry-0.md'),2,'old paths must be evicted rather than retained without a bound');
+  hook.dispose();const other=fakeHost(false,['Technical/entry-0.md']);const replacement=await install(other,'!Technical/entry-0.md\n*');
+  await other.app.vault.load();other.layout();assert.equal(replacement.phase,'applied');assert.ok(other.indexed.has('Technical/entry-0.md'));
+});
+
 test('startup stale metadata cleanup avoids repeated related-link rescans while retaining native deletion and visible resolution',async()=>{
   const host=fakeHost(false,['notes/public.md','Technical/hidden.md']);
   for(let i=0;i<10000;i++){
@@ -144,7 +169,7 @@ test('failure preserves a foreign accessor returning an own wrapper and restores
 });
 
 for(const asynchronous of [false,true])test(`filter completion failure preserves the native ${asynchronous?'Promise':'return value'} without retry`,async()=>{
-  const host=fakeHost();host.adapter.files.notes={type:'folder',realpath:'notes'};const nativeValue=asynchronous?Promise.resolve('native result'):{result:'native result'};let calls=0;host.adapter.listRecursive=()=>{calls++;return nativeValue;};
+  const host=fakeHost();host.adapter.files.notes={type:'folder',realpath:'notes'};const nativeValue=asynchronous?Promise.resolve('native result'):{result:'native result'};let calls=0;host.adapter.listRecursive=()=>{calls++;host.adapter.files.notes.realpath='notes/changed';return nativeValue;};
   const compiled=await compileRules('!notes/public.md\nnotes',{platform:'linux'});let decisions=0;const matcher={...compiled.matcher,match(path){if(++decisions===2)throw Error('completion failure');return compiled.matcher.match(path);}};
   const before=methods(host);const sources=structuredClone(host.physical);const hook=installFilter(host.app,matcher,'linux');const returned=host.adapter.listRecursive('notes');assert.equal(returned,nativeValue);if(asynchronous)assert.equal(await returned,'native result');
   assert.equal(hook.phase,'error');assert.equal(hook.reloadNeeded,true);assert.equal(calls,1);restored(before);assert.deepEqual(host.physical,sources);hook.dispose();
