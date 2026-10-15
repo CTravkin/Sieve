@@ -30,7 +30,8 @@ test('offline modal renders canonical help examples and cleans rendering compone
   resetUi();for(const language of ['en','ru','es']){
     globalThis.__sieveTestLanguage=language;const selected=language==='ru'?'ru':'en';const document=await readFile(new URL(`../../Docs/Syntax.${selected}.md`,import.meta.url),'utf8');
     const examples=[...document.matchAll(/```text\r?\n([\s\S]*?)```/g)].map(match=>match[1]);const help=syntaxHelp(language);
-    for(const example of examples)assert.ok(help.includes(example));assert.match(help,/Syncthing/);assert.match(help,/a\/\*\*\/b/);assert.doesNotMatch(help,/Syntax\.(?:en|ru)\.md|\.\.\/Tools\/Oracle/);
+    for(const example of examples)assert.ok(help.includes(example));assert.match(help,/Syncthing/);assert.match(help,/a\/\*\*\/b/);assert.doesNotMatch(help,/Syntax\.(?:en|ru)\.md|Oracle|Syncthing \d|## (Sources|Источники)/);
+    assert.ok(help.indexOf('Syncthing')<help.indexOf('|'),'compatibility introduction precedes the first table');
     const modal=new SyntaxHelpModal({});modal.open();await modal.rendered;assert.equal(globalThis.__sieveRenders.at(-1).markdown,help);const component=globalThis.__sieveRenders.at(-1).component;assert.equal(component.loaded,true);assert.ok(element(modal.contentEl,'button',selected==='ru'?'Закрыть':'Close'));modal.close();assert.equal(component.unloaded,true);assert.equal(modal.contentEl.textContent,'');
   }
 });

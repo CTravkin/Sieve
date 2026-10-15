@@ -51,6 +51,7 @@ export class Setting {
 export class MarkdownRenderer {static async render(app,markdown,el,path,component){el.setText(markdown);(globalThis.__sieveRenders??=[]).push({markdown,path,component});}}
 export const Platform={isDesktopApp:true,isWin:false,isMacOS:false,isLinux:true};
 export function getLanguage(){return globalThis.__sieveTestLanguage||'en';}
+export function setIcon(element,name){element.setAttr('data-icon',name);}
 export class Notice{constructor(message){(globalThis.__sieveTestNotices??=[]).push(message);}}
 `;
 

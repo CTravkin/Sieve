@@ -66,7 +66,7 @@ export async function checkProject() {
   for (const locale of [en, ru]) {
     const examples=Object.values(locale.settings.syntaxExamples);
     assert.equal(examples.length,5);
-    assert.deepEqual(examples.slice(0,4).map(example=>example.rule),['!important.tmp','*.tmp','/build','**/cache']);
+    assert.deepEqual(examples.slice(0,4).map(example=>example.rule),['!important','*.tmp','/build','**/cache']);
     assert.match(examples[4].rule,/^\/\//);
     assert.equal(locale.settings.rulesPlaceholder,'*.tmp\n/build\n**/cache');
   }

@@ -4,11 +4,10 @@ import english from '../../Docs/Syntax.en.md';
 import russian from '../../Docs/Syntax.ru.md';
 import {locale} from '../i18n/index.ts';
 
-/** Repository navigation and proof notes precede the first actual syntax section. */
+/** Keep the syntax introduction; omit the duplicate title and repository navigation. */
 export function syntaxHelp(language:string):string {
   const document=language==='ru'?russian:english;
-  const start=document.search(/^## /m);
-  return start<0?document:document.slice(start);
+  return document.replace(/^# [^\r\n]+\r?\n/,'').replace(/^\[Русский\]\(Syntax\.ru\.md\) · \[English\]\(Syntax\.en\.md\)\r?\n/m,'').trim();
 }
 
 export class SyntaxHelpModal extends Modal {

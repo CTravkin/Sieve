@@ -7,11 +7,11 @@
     "rulesPlaceholder": "*.tmp\n/build\n**/cache",
     "syntaxLabel": "Syntax",
     "syntaxExamples": {
-      "include": {"rule": "!important.tmp", "description": "keep important.tmp"},
+      "include": {"rule": "!important", "description": "keep important"},
       "exclude": {"rule": "*.tmp", "description": "exclude .tmp files"},
       "root": {"rule": "/build", "description": "exclude build at the root"},
       "nested": {"rule": "**/cache", "description": "exclude cache at any level"},
-      "comment": {"rule": "// comment", "description": "comment"}
+      "comment": {"rule": "// comment"}
     },
     "openHelp": "Help",
     "statusLabel": "Status",

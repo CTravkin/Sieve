@@ -2,7 +2,7 @@
 
 [Русский](Syntax.ru.md) · [English](Syntax.en.md)
 
-Sieve uses Syncthing 2.1.6 as its reference. The common matcher agrees with the native Windows and Linux oracle across the tested corpus. Obsidian integration and other platforms require separate verification; see [Oracle](../scripts/Oracle/README.md) for pins and commands.
+Sieve uses the same filter syntax as Syncthing and is compatible with its filter rules.
 
 ## Rule order
 
@@ -24,7 +24,7 @@ Blank lines and repeated identical lines are skipped. Leading and trailing white
 | `[!a-z]` | One character outside the range |
 | `{md,txt,pdf}` | One of the listed alternatives |
 
-These are patterns, not regular expressions. The native Syncthing 2.1.6 matcher matches `a/**/b` against both `a/b` and `a/x/b`: behavior depends on its glob optimizer. A leading `**/` is additionally handled so the pattern can match at the root.
+These are patterns, not regular expressions. The pattern `a/**/b` matches both `a/b` and `a/x/b`. A leading `**/` also lets a pattern match at the root.
 
 ## Prefixes
 
@@ -68,10 +68,3 @@ Specify the directive once per file, before its own patterns; `#include` directi
 ```
 
 Complete directory exclusions precede include rules. This lets the scanner skip technical subtrees. Other combinations may require traversing an apparently excluded directory to find an included descendant; such a directory must not be pruned prematurely.
-
-## Sources
-
-- [Syncthing rules](https://docs.syncthing.net/users/ignoring.html)
-- [2.1.6 parsing and matching](https://github.com/syncthing/syncthing/blob/v2.1.6/lib/ignore/ignore.go)
-- [Native compatibility tests](https://github.com/syncthing/syncthing/blob/v2.1.6/lib/ignore/ignore_test.go)
-- [Glob library syntax](https://github.com/gobwas/glob)

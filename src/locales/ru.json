@@ -7,11 +7,11 @@
     "rulesPlaceholder": "*.tmp\n/build\n**/cache",
     "syntaxLabel": "Синтаксис",
     "syntaxExamples": {
-      "include": {"rule": "!important.tmp", "description": "оставить important.tmp"},
+      "include": {"rule": "!important", "description": "оставить important"},
       "exclude": {"rule": "*.tmp", "description": "исключить файлы .tmp"},
       "root": {"rule": "/build", "description": "исключить build в корне"},
       "nested": {"rule": "**/cache", "description": "исключить cache на любом уровне"},
-      "comment": {"rule": "// комментарий", "description": "комментарий"}
+      "comment": {"rule": "// комментарий"}
     },
     "openHelp": "Справка",
     "statusLabel": "Статус",

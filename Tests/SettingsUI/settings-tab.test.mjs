@@ -112,7 +112,7 @@ test('late enable shows pending reopen while unchanged Save stays disabled',asyn
 });
 test('tab redraw follows host language, fields have accessible labels, and hide unsubscribes',async()=>{
   const h=await setup();try{
-    globalThis.__sieveTestLanguage='ru';h.tab.display();assert.match(h.tab.containerEl.textContent,/Исключает файлы и каталоги перед индексацией хранилища/);assert.doesNotMatch(h.tab.containerEl.textContent,/Syncthing|[ёЁ]/);
+    globalThis.__sieveTestLanguage='ru';h.tab.display();assert.match(h.tab.containerEl.textContent,/Каждое правило в новой строке/);assert.doesNotMatch(h.tab.containerEl.textContent,/Syncthing|[ёЁ]/);
     assert.equal(element(h.tab.containerEl,'textarea').attributes['aria-label'],'Правила фильтрации');assert.equal(element(h.tab.containerEl,'input').attributes['aria-label'],'Отображаемое имя хранилища');
     for(const tag of ['textarea','input'])for(const id of element(h.tab.containerEl,tag).attributes['aria-describedby'].split(' '))assert.ok(h.tab.containerEl.descendants().some(el=>el.attributes.id===id),'accessible description target exists');
     h.tab.hide();const text=h.tab.containerEl.textContent;await h.plugin.saveSettings({schemaVersion:1,rules:'Changed after hide',displayName:''});assert.equal(h.tab.containerEl.textContent,text);
@@ -176,8 +176,14 @@ test('native settings rows show examples, vault-folder placeholder and status be
     const h=await setup();try{
       globalThis.__sieveTestLanguage=language;h.tab.display();
       const examples=h.tab.containerEl.descendants().filter(el=>el.classes.has('sieve-syntax-example'));
-      assert.equal(examples.length,5);assert.deepEqual(examples.map(row=>element(row,'code').textContent),['!important.tmp','*.tmp','/build','**/cache',language==='ru'?'// комментарий':'// comment']);
-      for(const row of examples){assert.ok(element(row,'code').classes.has('sieve-syntax-pattern'));assert.ok(element(row,'span').textContent);}
+      assert.equal(examples.length,5);assert.deepEqual(examples.map(row=>element(row,'code').textContent),['!important','*.tmp','/build','**/cache',language==='ru'?'// комментарий':'// comment']);
+      for(const row of examples)assert.ok(element(row,'code').classes.has('sieve-syntax-pattern'));
+      for(const row of examples.slice(0,4))assert.ok(element(row,'span').textContent);
+      assert.equal(element(examples[4],'span'),undefined);
+      assert.equal(h.tab.icon,'layers');
+      const heading=element(h.tab.containerEl,'h2');assert.equal(heading.textContent.trim(),'Sieve');
+      assert.ok(heading.descendants().some(el=>el.attributes['data-icon']==='layers'&&el.attributes['aria-hidden']==='true'));
+      assert.doesNotMatch(h.tab.containerEl.textContent,/Excludes files|Исключает файлы/);
       assert.equal(element(h.tab.containerEl,'input').placeholder,'Vault folder');
       const save=element(h.tab.containerEl,'button',language==='ru'?'Сохранить':'Save'),setting=save.parentElement.parentElement;
       assert.ok(setting.children.some(el=>el.textContent===(language==='ru'?'Статус':'Status')));

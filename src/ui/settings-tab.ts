@@ -1,4 +1,4 @@
-import {Notice,PluginSettingTab,Setting,getLanguage} from 'obsidian';
+import {Notice,PluginSettingTab,Setting,getLanguage,setIcon} from 'obsidian';
 import type {App,ButtonComponent,TextAreaComponent,TextComponent} from 'obsidian';
 import type SievePlugin from '../main.ts';
 import type {SettingsError} from '../settings/storage.ts';
@@ -29,12 +29,14 @@ export class SieveSettingsTab extends PluginSettingTab {
   private validationGeneration=0;
   private help?:SyntaxHelpModal;
   private reloadOffer?:ReloadOfferModal;
-  constructor(app:App,private readonly sieve:SievePlugin){super(app,sieve);}
+  constructor(app:App,private readonly sieve:SievePlugin){super(app,sieve);this.icon='layers';}
   display():void {
     this.unsubscribe?.();this.visible=true;
     if(!this.hydrated)this.draft=this.sieve.draftSettings??defaultSettings();
     const text=locale(getLanguage()).settings;const container=this.containerEl;container.empty();container.addClass('sieve-settings');
-    container.createEl('h2',{text:text.title});container.createEl('p',{text:text.description});
+    const heading=container.createEl('h2',{cls:'sieve-settings-heading'});
+    setIcon(heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}}),this.icon);
+    heading.createEl('span',{text:text.title});
     const rulesSetting=new Setting(container).setName(text.rulesLabel).setDesc(text.rulesDescription).setClass('sieve-rules-setting');
     rulesSetting.descEl.setAttr('id','sieve-rules-description');
     rulesSetting.addTextArea(input=>{
@@ -55,7 +57,7 @@ export class SieveSettingsTab extends PluginSettingTab {
     syntaxSetting.descEl.addClass('sieve-syntax-examples');
     for(const example of Object.values(text.syntaxExamples)){
       const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
-      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});row.createEl('span',{text:example.description});
+      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:example.description});
     }
     const nameSetting=new Setting(container).setName(text.displayNameLabel).setDesc(text.displayNameDescription).setClass('sieve-display-name-setting');
     nameSetting.descEl.setAttr('id','sieve-display-name-description');
