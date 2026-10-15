@@ -8,7 +8,7 @@ An Obsidian plugin that excludes files and folders before vault indexing.
 
 The first version is in development. The common matcher, native oracle, early runtime, per-vault settings storage, English/Russian UI, and vault display names are implemented. Platform and performance checks continue. There is no public release.
 
-Development version: `0.6.5 (18)`. The private runtime uses the complete matcher; diagnostic probes and benchmarks belong to the developer workspace. Native checks use separate synthetic vaults.
+Development version: `0.6.6 (19)`. The private runtime uses the complete matcher; diagnostic probes and benchmarks belong to the developer workspace. Native checks use separate synthetic vaults.
 
 ## Features
 

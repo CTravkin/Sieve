@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { runOracle } from './runner.mjs';
 import { compileRules } from '../../dist/core/matcher.mjs';
 
-const input = new URL('../../Local/.temp/Oracle/generated-mismatches.json', import.meta.url);
+const input = new URL('../../../Local/.temp/Oracle/generated-mismatches.json', import.meta.url);
 const differences = JSON.parse(await readFile(input, 'utf8')).filter(x => x.expected);
 const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';
 

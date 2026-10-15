@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdir,readFile,writeFile,copyFile} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,copyFile,symlink} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
@@ -10,7 +10,7 @@ const repository=fileURLToPath(new URL('../../',import.meta.url));
 const metadata={version:'0.1.0',sieveBuild:1,devDependencies:{esbuild:'0.28.2',typescript:'7.0.2',obsidian:'1.14.4'}};
 const quoteJson=value=>JSON.stringify(value,null,2)+'\n';
 async function fixture(){
-  const root=path.join(repository,'Local/.temp/Development/2026-10-14',`package-fingerprint-${randomUUID()}`);
+  const root=path.join(repository,'../Local/.temp/Development/2026-10-14',`package-fingerprint-${randomUUID()}`);
   for(const directory of ['scripts/Oracle/licenses','Docs','src/core'])await mkdir(path.join(root,directory),{recursive:true});
   await copyFile(path.join(repository,'scripts/build-plugin.mjs'),path.join(root,'scripts/build-plugin.mjs'));
   // Asset validation is covered by the repository suite. This fixture isolates
@@ -25,6 +25,15 @@ async function fixture(){
     'tsconfig.json':quoteJson({compilerOptions:{target:'ES2020'}}),
   };
   for(const [name,bytes] of Object.entries(files))await writeFile(path.join(root,name),bytes);
+  // Fixtures live outside the checkout: bind installed build dependencies and
+  // give the unchanged builder its own source identity instead of inheriting Git.
+  await symlink(path.join(repository,'node_modules'),path.join(root,'node_modules'),'junction');
+  await writeFile(path.join(root,'.gitignore'),'dist/\nnode_modules/\n');
+  await mkdir(path.join(root,'hooks'));
+  const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
+  git(['init','-q']);
+  git(['add','.gitignore','scripts','Docs','src','package.json','manifest.json','THIRD-PARTY-NOTICES.md','tsconfig.json']);
+  git(['-c','commit.gpgsign=false','-c',`core.hooksPath=${path.join(root,'hooks')}`,'-c','user.name=Sieve Build Test','-c','user.email=sieve-test@example.invalid','commit','-qm','Owned build fixture']);
   return root;
 }
 function build(root){return execFileSync(process.execPath,[path.join(root,'scripts/build-plugin.mjs')],{cwd:root,encoding:'utf8',timeout:15000,stdio:['ignore','pipe','pipe']});}

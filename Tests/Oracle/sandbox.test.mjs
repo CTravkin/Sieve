@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { runOracle } from '../../scripts/Oracle/runner.mjs';
 
 test('unsafe alias and permission plans reject before touching an own external sentinel on every OS', async () => {
-  const temporary = fileURLToPath(new URL('../../Local/.temp/Oracle/', import.meta.url));
+  const temporary = fileURLToPath(new URL('../../../Local/.temp/Oracle/', import.meta.url));
   await mkdir(temporary,{recursive:true});
   const owned = await mkdtemp(path.join(temporary,'sandbox-sentinel-'));
   assert.ok(path.resolve(owned).startsWith(path.resolve(temporary)+path.sep));

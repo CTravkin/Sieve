@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
 const oracle = path.join(repository, 'scripts', 'Oracle');
-const temporary = path.join(repository, 'Local', '.temp', 'Oracle');
+const temporary = path.resolve(repository, '../Local/.temp/Oracle');
 let built;
 
 function execute(command, args, input = '', cwd = repository, timeoutMs = 0) {

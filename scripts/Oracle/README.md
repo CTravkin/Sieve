@@ -10,7 +10,7 @@ npm.cmd run test:core
 npm.cmd run test:oracle
 ```
 
-`runner.mjs` compiles the binary with `go build -mod=readonly -trimpath` and stores it under ignored `Local/.temp/Oracle/`. Each request creates a disposable fixture there and removes only its generated fixture directory. It never loads a user vault. Normal root asset tests do not download Go dependencies.
+`runner.mjs` compiles the binary with `go build -mod=readonly -trimpath` and stores it under `../Local/.temp/Oracle/`, outside the repository. Each request creates a disposable fixture there and removes only its generated fixture directory. It never loads a user vault. Normal root asset tests do not download Go dependencies.
 
 For a host without Go, cross-build the same source and set `SIEVE_ORACLE_BINARY` to the explicitly supplied executable path. The runner checks that path is executable; it does not download or install a binary. Execute the tests on the real target OS to obtain its native case-fold/normalization profile. Cross-compilation alone is not native verification.
 

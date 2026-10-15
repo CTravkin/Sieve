@@ -11,7 +11,7 @@ const json=value=>JSON.stringify(value,null,2)+'\n';
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const windows={skip:process.platform!=='win32'};
 async function fixture(){
-  const root=path.join(repository,'Local/.temp/Development/2026-10-14',`package-inventory-${randomUUID()}`);
+  const root=path.join(repository,'../Local/.temp/Development/2026-10-14',`package-inventory-${randomUUID()}`);
   for(const directory of ['scripts/Oracle/licenses','src/core','dist/sieve/licenses','dist/sieve/src/core','hooks'])await mkdir(path.join(root,directory),{recursive:true});
   for(const name of ['package-private.ps1','package-paths.ps1'])await copyFile(path.join(repository,'scripts',name),path.join(root,'scripts',name));
   await writeFile(path.join(root,'.gitignore'),'dist/\n');

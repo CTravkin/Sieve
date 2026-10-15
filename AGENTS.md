@@ -42,7 +42,9 @@ host/device evidence; source-based hypotheses alone do not pass that gate.
 ### Storage
 
 Keep application configuration, assets, source and tests in their native paths.
-Local environments and generated `dist` stay untracked. Disposable probe
+Local state belongs to the shared `../Local`; tests and oracle use its `.temp`.
+Serena uses the ignored `.serena` junction to `../Local/.tools/Serena/Sieve`.
+Do not recreate a repository-local Local. Generated `dist` stays untracked. Disposable probe
 fixtures and diagnostics follow the shared diagnostics inventory and shared-workspace storage.
 Keep only useful evidence after task cleanup.
 

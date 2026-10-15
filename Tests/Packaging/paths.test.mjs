@@ -10,7 +10,7 @@ const repository=fileURLToPath(new URL('../../',import.meta.url));
 const helper=path.join(repository,'scripts/package-paths.ps1');
 const quote=value=>"'"+value.replaceAll("'","''")+"'";
 async function fixture(){
-  const directory=path.join(repository,'Local/.temp/Development/2026-10-14',`package-boundary-${randomUUID()}`);
+  const directory=path.join(repository,'../Local/.temp/Development/2026-10-14',`package-boundary-${randomUUID()}`);
   const root=path.join(directory,'Repository'),outside=path.join(directory,'Outside');
   await mkdir(root,{recursive:true});await mkdir(outside);await writeFile(path.join(outside,'license.txt'),'owned guard fixture\n');
   return{root,outside};

@@ -40,7 +40,7 @@ async function compare(fixtures, label, t) {
     }
   }
   if (differences.length) {
-    const directory = new URL('../../Local/.temp/Oracle/', import.meta.url);
+    const directory = new URL('../../../Local/.temp/Oracle/', import.meta.url);
     await mkdir(directory, { recursive: true });
     await writeFile(new URL(`${label}-mismatches.json`, directory), JSON.stringify(differences, null, 2));
   }

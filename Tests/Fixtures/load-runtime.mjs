@@ -10,7 +10,7 @@ export async function loadRuntime(name, obsidian) {
     bundle:true,write:false,format:'esm',platform:'browser',target:'es2020',loader:{'.md':'text'},
     plugins:obsidian?[{name:'test-host',setup(builder){builder.onResolve({filter:/^obsidian$/},()=>({path:'obsidian',namespace:'fixture'}));builder.onLoad({filter:/.*/,namespace:'fixture'},()=>({contents:obsidian,loader:'js'}));}}]:[],
   });
-  const directory=fileURLToPath(new URL('../../Local/.temp/Development/2026-10-14/runtime-tests/',import.meta.url));
+  const directory=fileURLToPath(new URL('../../../Local/.temp/Development/2026-10-14/runtime-tests/',import.meta.url));
   await mkdir(directory,{recursive:true});
   const contents=result.outputFiles[0].contents;
   const output=path.join(directory,`${name.replace(/[^a-z0-9]+/gi,'-')}-${process.pid}-${createHash('sha256').update(contents).digest('hex').slice(0,12)}.mjs`);
