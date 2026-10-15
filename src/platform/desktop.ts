@@ -1,6 +1,7 @@
 import type {PrivateAdapter} from './contracts.ts';
 import {copyBinary,method} from './contracts.ts';
 import type {AliasProvider,AliasSnapshot,VaultLabel} from '../alias/contracts.ts';
+import {sameVaults} from '../alias/vault-labels.ts';
 export function desktopIncludeReader(adapter:PrivateAdapter):(path:string)=>Promise<Uint8Array> {
   return async path=>{
     const provider=adapter.fsPromises;
@@ -29,7 +30,7 @@ export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefin
     const vaults=registry();if(!vaults)return;
     const byId=new Map(vaults.map(vault=>[vault.id!,vault]));const byPath=new Map<string,VaultLabel|undefined>();
     for(const vault of vaults)byPath.set(vault.path,byPath.has(vault.path)?undefined:vault);
-    return {vaults,validate(){const latest=registry();return !!latest && latest.length===vaults.length && latest.every((vault,index)=>vault.id===vaults[index].id && vault.path===vaults[index].path && vault.isCurrentVault===vaults[index].isCurrentVault);},async read(vault){
+    return {vaults,validate(){return sameVaults(registry(),vaults);},async read(vault){
       const entry=vault.id?byId.get(vault.id):byPath.get(vault.path);
       if(!entry || entry.path!==vault.path || !adapter.fsPromises || typeof adapter.fsPromises.readFile!=='function')throw Error('Alias read unavailable');
       const override=entry.isCurrentVault?configDir:host?.localStorage?.getItem(entry.id+'-config')||'.obsidian';

@@ -4,13 +4,15 @@ import {mkdir,readFile,writeFile,copyFile,symlink} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {createTestDirectory} from '../../scripts/test-temporary.mjs';
 
 const repository=fileURLToPath(new URL('../../',import.meta.url));
 const metadata={version:'0.1.0',sieveBuild:1,devDependencies:{esbuild:'0.28.2',typescript:'7.0.2',obsidian:'1.14.4'}};
 const quoteJson=value=>JSON.stringify(value,null,2)+'\n';
-async function fixture(){
-  const root=path.join(repository,'../Local/.temp/Development/2026-10-14',`package-fingerprint-${randomUUID()}`);
+async function fixture(t){
+  const owned=await createTestDirectory('package-fingerprint-');
+  t.after(()=>owned.cleanup());
+  const root=owned.path;
   for(const directory of ['scripts/Oracle/licenses','Docs','src/core'])await mkdir(path.join(root,directory),{recursive:true});
   await copyFile(path.join(repository,'scripts/build-plugin.mjs'),path.join(root,'scripts/build-plugin.mjs'));
   // Asset validation is covered by the repository suite. This fixture isolates
@@ -40,13 +42,13 @@ function build(root){return execFileSync(process.execPath,[path.join(root,'scrip
 const identity=root=>readFile(path.join(root,'dist/sieve/identity.json'),'utf8').then(JSON.parse);
 const hashFiles=async root=>Object.fromEntries(await Promise.all(['main.js','manifest.json','INSTALL.md','identity.json'].map(async name=>[name,await readFile(path.join(root,'dist/sieve',name),'utf8')])));
 
-test('unchanged source rebuild retains build, fingerprint and packaged installation text',async()=>{
-  const root=await fixture();build(root);const before=await identity(root);build(root);const after=await identity(root);
+test('unchanged source rebuild retains build, fingerprint and packaged installation text',async t=>{
+  const root=await fixture(t);build(root);const before=await identity(root);build(root);const after=await identity(root);
   assert.equal(after.build,1);assert.equal(after.sourceFingerprint,before.sourceFingerprint);assert.deepEqual(after.files,before.files);
   assert.equal(await readFile(path.join(root,'dist/sieve/INSTALL.md'),'utf8'),await readFile(path.join(root,'Docs/Private-Package.md'),'utf8'));
 });
-for(const name of ['Docs/Private-Package.md','THIRD-PARTY-NOTICES.md','scripts/Oracle/licenses/fixture.txt','tsconfig.json'])test(`changed imported ${name} requires a new version before overwriting a package`,async()=>{
-  const root=await fixture();build(root);const before=await identity(root),bytes=await hashFiles(root);
+for(const name of ['Docs/Private-Package.md','THIRD-PARTY-NOTICES.md','scripts/Oracle/licenses/fixture.txt','tsconfig.json'])test(`changed imported ${name} requires a new version before overwriting a package`,async t=>{
+  const root=await fixture(t);build(root);const before=await identity(root),bytes=await hashFiles(root);
   if(name.endsWith('.json'))await writeFile(path.join(root,name),quoteJson({compilerOptions:{target:'ES2020',useDefineForClassFields:true}}));
   else await writeFile(path.join(root,name),(await readFile(path.join(root,name),'utf8'))+'Changed owned fixture\n');
   assert.throws(()=>build(root),error=>String(error.stderr).includes('Changed runtime source requires a new development version and build number'));

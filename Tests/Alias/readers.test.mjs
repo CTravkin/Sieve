@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import path from 'node:path';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 import {loadRuntime} from '../Fixtures/load-runtime.mjs';
 import {aliasHost,config,vaults,tick} from './host.mjs';
 import {uiSdk} from '../Fixtures/ui-host.mjs';
@@ -35,7 +35,8 @@ test('names are literal text, invalid/missing schemas default, and alias reads n
 });
 
 test('portable alias runtime contains no Node/Electron imports outside lazy desktop provider',async()=>{
-  for(const file of ['alias/contracts.ts','alias/display-name.ts','alias/projection.ts','platform/mobile.ts']){const source=await readFile(new URL('../../src/'+file,import.meta.url),'utf8');assert.doesNotMatch(source,/(?:from\s*|import\s*\(|require\s*\()\s*['"](?:node:|fs|path|electron|@electron\/remote)/);}
+  const aliases=await readdir(new URL('../../src/alias/',import.meta.url));
+  for(const file of [...aliases.filter(file=>file.endsWith('.ts')).map(file=>'alias/'+file),'platform/mobile.ts']){const source=await readFile(new URL('../../src/'+file,import.meta.url),'utf8');assert.doesNotMatch(source,/(?:from\s*|import\s*\(|require\s*\()\s*['"](?:node:|fs|path|electron|@electron\/remote)/);}
 });
 
 for(const surface of ['drawer','chooser'])test(`200-vault ${surface} uses constant IPC and bounded concurrent config reads in native order`,async()=>{

@@ -60,6 +60,16 @@ test('ignored traversable files never publish metadata and only necessary folder
   const host=fakeHost(false,['Technical/deep/keep.md','Technical/empty/secret.md','Technical/deep/secret.md']);await install(host,'!Technical/deep/keep.md\nTechnical');await host.app.vault.load();host.layout();
   assert.deepEqual([...host.indexed.keys()].sort(),['Technical','Technical/deep','Technical/deep/keep.md']);assert.ok(!host.events.some(([type,p])=>type==='file-created'&&p.endsWith('secret.md')));assert.ok(host.physical.has('Technical/empty/secret.md'));
 });
+
+for(const mobile of [false,true])test(`${mobile?'mobile':'desktop'} dirty containers are hidden deepest first, preserving insertion order at equal depths`,async()=>{
+  const paths=['Technical/a/deep/keep.md','Technical/very-long-branch/keep.md','Technical/z/deep/keep.md'];
+  const host=fakeHost(mobile,paths);const hook=await install(host,'!keep.md\nTechnical');await host.app.vault.load();host.layout();
+  const removed=[];host.app.vault.on('delete',file=>{if(Array.isArray(file.children))removed.push(file.path);});
+  for(const path of paths){host.physical.delete(path);host.adapter.removeFile(path);}
+  await Promise.resolve();
+  assert.deepEqual(removed,['Technical/a/deep','Technical/z/deep','Technical/a','Technical/very-long-branch','Technical/z','Technical']);
+  assert.equal(host.indexed.size,0);assert.ok(host.physical.has('Technical/a/deep'),'projection cleanup preserves physical folders');assert.equal(hook.phase,'applied');hook.dispose();
+});
 test('preflight is atomic and late enable remains pending without patching an existing index',async()=>{
   const locked=fakeHost();const before=locked.adapter.listRecursiveChild;Object.defineProperty(locked.adapter,'trigger',{value:locked.adapter.trigger,configurable:false});assert.equal((await install(locked,'Technical')).status,'unsupported');assert.equal(locked.adapter.listRecursiveChild,before);
   const late=fakeHost();await late.app.vault.load();late.layout();const method=late.adapter.listRecursiveChild;const hook=await install(late,'Technical');assert.equal(hook.phase,'pending');assert.equal(hook.reloadNeeded,true);assert.equal(late.adapter.listRecursiveChild,method);assert.ok(late.indexed.has('Technical/secret.md'));

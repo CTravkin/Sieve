@@ -139,3 +139,28 @@ test('a newer drawer request stops the older workers from scheduling more files'
   const h=aliasHost(),older=deferred(),newer=deferred();h.list.splice(0,h.list.length,...Array.from({length:40},(_,index)=>({path:'/v'+index,name:'Shared',isCurrentVault:index===0})));let starts=0;h.provider.read=async()=>{const attempt=++starts;await(attempt<=4?older.promise:newer.promise);return{schemaVersion:1,rules:'',displayName:attempt<=4?'Old':'New'};};const p=install(h);
   h.doc.switcher.click();await tick();assert.equal(starts,4);h.doc.switcher.click();await tick();assert.equal(starts,8);older.resolve();await tick();assert.equal(starts,8);assert.equal(h.menus.length,0);newer.resolve();await tick();assert.equal(starts,43);assert.equal(h.menus.length,1);assert.equal(h.menus[0].items[39].titleEl.textContent,'New');p.dispose();
 });
+
+test('chooser refresh invalidates the old epoch while the latest request updates native search',async()=>{
+  const h=aliasHost(),older=deferred(),newer=deferred();let reads=0;
+  h.provider.read=()=>++reads===1?older.promise:newer.promise;
+  const p=install(h),modal=h.app.commands.commands['app:switch-vault'].callback();
+  try{
+    await tick();assert.equal(reads,1);h.setCurrent('Latest current');p.refresh();await tick();assert.equal(reads,2);
+    newer.resolve({schemaVersion:1,rules:'',displayName:'Latest other'});await tick();assert.deepEqual(modal.search,['Latest current','Latest other']);
+    const updates=modal.updates;older.resolve({schemaVersion:1,rules:'',displayName:'Stale other'});await tick();assert.equal(modal.updates,updates);assert.deepEqual(modal.search,['Latest current','Latest other']);
+    modal.onChooseItem(modal.items[1]);assert.deepEqual(h.selected,['/two/Shared']);
+  }finally{older.resolve();newer.resolve();p.dispose();}
+});
+
+test('the newest drawer click across documents cancels an older window request',async()=>{
+  const h=aliasHost(),older=deferred(),newer=deferred(),listeners=new Map();let reads=0;
+  h.provider.read=()=>++reads===1?older.promise:newer.promise;h.app.workspace.on=(event,callback)=>{listeners.set(event,callback);return event;};h.app.workspace.offref=event=>listeners.delete(event);
+  const p=install(h),popout=new Document();popout.switcher.handlers.push(...h.doc.switcher.handlers);
+  try{
+    listeners.get('window-open')({}, {document:popout});h.doc.switcher.click();await tick();popout.switcher.click();await tick();assert.equal(reads,2);
+    older.resolve({schemaVersion:1,rules:'',displayName:'Stale'});await tick();assert.equal(h.menus.length,0);
+    newer.resolve({schemaVersion:1,rules:'',displayName:'Latest'});await tick();assert.equal(h.menus.length,1);assert.deepEqual(h.menus[0].items.map(item=>item.titleEl?.textContent),['Current alias','Latest',undefined,'Manage vaults']);
+    h.menus[0].items[1].callback();assert.deepEqual(h.selected,['/two/Shared']);
+  }finally{older.resolve();newer.resolve();p.dispose();}
+  assert.equal(popout.handlers.length,0);
+});

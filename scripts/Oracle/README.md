@@ -10,9 +10,13 @@ npm.cmd run test:core
 npm.cmd run test:oracle
 ```
 
-`runner.mjs` compiles the binary with `go build -mod=readonly -trimpath` and stores it under `../Local/.temp/Oracle/`, outside the repository. Each request creates a disposable fixture there and removes only its generated fixture directory. It never loads a user vault. Normal root asset tests do not download Go dependencies.
+`npm.cmd run test:oracle` uses `../run-tests.mjs --oracle`: it compiles one binary with `go build -mod=readonly -trimpath` in its own directory under `../Local/.temp/Development/`, then shares that executable with every test worker through `SIEVE_ORACLE_BINARY`. The wrapper removes its build and fixture directories in `finally`, including failed test runs. Each native request also removes its own generated fixture directory. It never loads a user vault. Normal root asset tests do not download Go dependencies.
 
-For a host without Go, cross-build the same source and set `SIEVE_ORACLE_BINARY` to the explicitly supplied executable path. The runner checks that path is executable; it does not download or install a binary. Execute the tests on the real target OS to obtain its native case-fold/normalization profile. Cross-compilation alone is not native verification.
+Direct `runner.mjs` callers without a supplied executable create one process-local disposable build under `../Local/.temp/Oracle/`. `cleanupOracle()` releases it explicitly; a `beforeExit` fallback releases it after outstanding work finishes. Cleanup never adopts preexisting directories or follows junction targets. Forced process or host termination can prevent cleanup. There is no persistent binary cache.
+
+The suite wrapper handles SIGINT/SIGTERM from the start of preparation. Cancellation during compilation waits for that build to settle, then cleans its files without starting tests; it does not forcibly terminate Go. During tests, the wrapper forwards the signal and waits for its child to close before cleanup. Signal exit codes are 130/143, and handlers are detached after cleanup.
+
+For a host without Go, cross-build the same source and set `SIEVE_ORACLE_BINARY` to the explicitly supplied executable path. The wrapper and runner reuse that executable without taking ownership or deleting it. The runner checks that path is executable; it does not download or install a binary. Execute the tests on the real target OS to obtain its native case-fold/normalization profile. Cross-compilation alone is not native verification.
 
 ## Protocol
 

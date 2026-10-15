@@ -41,8 +41,8 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
   const forget=(key:string):void=>{const entry=cached(key);if(key==='/' || !entry || (entry.type==='folder' && (counts.get(key)??0)>0))return;projection.hide(key);};
   const cleanDirty=(withinRename=false):void=>{
     if(!active || (renamesInFlight>0 && !withinRename))return;
-    const keys=[...dirty].sort((a,b)=>b.split('/').length-a.split('/').length);dirty.clear();
-    for(const key of keys)if(cached(key) && decide(realFor(key)).ignored)forget(key);
+    const keys=[...dirty].map(key=>({key,depth:key.split('/').length})).sort((a,b)=>b.depth-a.depth);dirty.clear();
+    for(const {key} of keys)if(cached(key) && decide(realFor(key)).ignored)forget(key);
   };
   let cleanupQueued=false;
   const laterCleanup=():void=>{if(cleanupQueued)return;cleanupQueued=true;void Promise.resolve().then(()=>{cleanupQueued=false;try{cleanDirty();}catch{failed();}});};

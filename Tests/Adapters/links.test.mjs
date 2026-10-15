@@ -72,6 +72,18 @@ test('large hidden snapshots preserve every fresh reference and prune unchanged 
   let snapshot;await host.manager.runAsyncLinkUpdate(value=>{snapshot=value;});assert.equal(snapshot.length,0);
   await host.manager.renameFile(target,'visible/Returned.md');assert.equal(refs.filter(ref=>ref.link==='visible/Returned#Heading').length,1000);
 });
+
+test('references already captured by FileManager are resolved only by its native snapshot',async()=>{
+  const host=await start(false),target=host.app.vault.getFileByPath('visible/Target.md'),source=host.app.vault.getFileByPath('notes/Source.md');
+  await host.manager.renameFile(target,'Technical/Hidden.md');
+  const hidden=host.addRef(source,'Technical/Hidden');
+  const visible=host.addRef(source,'notes/Source');
+  const calls=[];const resolve=host.metadataCache.getLinkpathDest;
+  host.metadataCache.getLinkpathDest=function(link,...args){calls.push(link);return resolve.call(this,link,...args);};
+  await host.manager.renameFile(target,'visible/Returned.md');
+  assert.equal(calls.filter(link=>link==='notes/Source').length,1,'Sieve must skip a source/reference pair already present in the native snapshot');
+  assert.equal(hidden.link,'visible/Returned');assert.equal(visible.link,'notes/Source');assert.equal(host.hook.phase,'applied');host.hook.dispose();
+});
 test('equal-content sources sharing reference objects remain distinct native update rows',async()=>{
   const host=await start(false,['visible/Target.md','notes/Source.md','notes/Other.md']),target=host.app.vault.getFileByPath('visible/Target.md');
   const first=host.app.vault.getFileByPath('notes/Source.md'),second=host.app.vault.getFileByPath('notes/Other.md');

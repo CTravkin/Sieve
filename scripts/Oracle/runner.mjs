@@ -4,10 +4,11 @@ import { constants } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createTestDirectory } from '../test-temporary.mjs';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
 const oracle = path.join(repository, 'scripts', 'Oracle');
-const temporary = path.resolve(repository, '../Local/.temp/Oracle');
+const temporary = process.env.SIEVE_ORACLE_TEMP || path.resolve(repository, '../Local/.temp/Oracle');
 let built;
 
 function execute(command, args, input = '', cwd = repository, timeoutMs = 0) {
@@ -32,26 +33,41 @@ function execute(command, args, input = '', cwd = repository, timeoutMs = 0) {
   });
 }
 
-export async function buildOracle() {
-  if (!built) built = (async () => {
-    await mkdir(temporary, { recursive: true });
-    // Explicit, caller-provided test binary for isolated native host runs without Go.
-    // No download, install, or discovery of executables outside this configured path.
-    if (process.env.SIEVE_ORACLE_BINARY) {
-      const supplied = path.resolve(process.env.SIEVE_ORACLE_BINARY);
-      await access(supplied, constants.X_OK);
-      return supplied;
-    }
+export async function createOracle({ directory = temporary, binary = process.env.SIEVE_ORACLE_BINARY } = {}) {
+  // Explicit external executables remain owned by the caller.
+  if (binary) {
+    const supplied = path.resolve(binary);
+    await access(supplied, constants.X_OK);
+    return { binary: supplied, supplied: true, cleanup: async () => {} };
+  }
+  const owned = await createTestDirectory('build-', directory);
+  try {
     const files = await Promise.all(['go.mod', 'go.sum', 'main.go', 'sandbox.go'].map(name => readFile(path.join(oracle, name))));
     const hash = createHash('sha256').update(Buffer.concat(files)).digest('hex').slice(0, 16);
-    const binary = path.join(temporary, `oracle-${hash}-${process.pid}${process.platform === 'win32' ? '.exe' : ''}`);
+    const binary = path.join(owned.path, `oracle-${hash}${process.platform === 'win32' ? '.exe' : ''}`);
     await execute('go', ['build', '-mod=readonly', '-trimpath', '-o', binary, '.'], '', oracle);
-    return binary;
-  })();
-  return built;
+    return { binary, supplied: false, cleanup: () => owned.cleanup() };
+  } catch (error) {
+    await owned.cleanup();
+    throw error;
+  }
+}
+
+export async function cleanupOracle() {
+  if (built) await (await built).cleanup();
+}
+
+export async function buildOracle() {
+  if (!built) {
+    built = createOracle();
+    // Direct helper users also release their build after outstanding work ends.
+    process.once('beforeExit', () => { void cleanupOracle().catch(error => { console.error(error); process.exitCode = 1; }); });
+  }
+  return (await built).binary;
 }
 
 export async function runOracle(fixtures, { timeoutMs = 0 } = {}) {
+  await mkdir(temporary, { recursive: true });
   return JSON.parse(await execute(await buildOracle(), [], JSON.stringify(fixtures), repository, timeoutMs));
 }
 

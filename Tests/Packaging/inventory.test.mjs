@@ -4,14 +4,17 @@ import {mkdir,readFile,writeFile,copyFile,access} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {createHash,randomUUID} from 'node:crypto';
+import {createHash} from 'node:crypto';
+import {createTestDirectory} from '../../scripts/test-temporary.mjs';
 
 const repository=fileURLToPath(new URL('../../',import.meta.url));
 const json=value=>JSON.stringify(value,null,2)+'\n';
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const windows={skip:process.platform!=='win32'};
-async function fixture(){
-  const root=path.join(repository,'../Local/.temp/Development/2026-10-14',`package-inventory-${randomUUID()}`);
+async function fixture(t){
+  const owned=await createTestDirectory('package-inventory-');
+  t.after(()=>owned.cleanup());
+  const root=owned.path;
   for(const directory of ['scripts/Oracle/licenses','src/core','dist/sieve/licenses','dist/sieve/src/core','hooks'])await mkdir(path.join(root,directory),{recursive:true});
   for(const name of ['package-private.ps1','package-paths.ps1'])await copyFile(path.join(repository,'scripts',name),path.join(root,'scripts',name));
   await writeFile(path.join(root,'.gitignore'),'dist/\n');
@@ -35,8 +38,8 @@ async function fixture(){
 function pack(context){return JSON.parse(execFileSync('pwsh.exe',['-NoProfile','-NonInteractive','-File',path.join(context.root,'scripts/package-private.ps1'),'-Destination',context.output],{cwd:context.root,encoding:'utf8',timeout:15000,stdio:['ignore','pipe','pipe']}));}
 async function absent(file){await assert.rejects(access(file),error=>error.code==='ENOENT');}
 
-test('real private packer emits complete inventory and preserves an existing archive',windows,async()=>{
-  const context=await fixture();const proof=pack(context);assert.equal(proof.files,7);assert.equal(proof.gitCommit,context.identity.gitCommit);
+test('real private packer emits complete inventory and preserves an existing archive',windows,async t=>{
+  const context=await fixture(t);const proof=pack(context);assert.equal(proof.files,7);assert.equal(proof.gitCommit,context.identity.gitCommit);
   const bytes=await readFile(context.output);assert.equal(proof.sha256.toLowerCase(),sha(bytes));
   assert.throws(()=>pack(context),error=>String(error.stderr).includes('Preserve existing package'));
   assert.deepEqual(await readFile(context.output),bytes);
@@ -49,12 +52,12 @@ const corrupt={
   traversal:identity=>{identity.files['../sieve/main.js']=identity.files['main.js'];delete identity.files['main.js'];},
   wrongHash:identity=>{identity.files['main.js']='b'.repeat(64);},
 };
-for(const [name,tamper] of Object.entries(corrupt))test(`real private packer refuses ${name} before ZIP creation`,windows,async()=>{
-  const context=await fixture();tamper(context.identity);await writeFile(context.identityPath,json(context.identity));
+for(const [name,tamper] of Object.entries(corrupt))test(`real private packer refuses ${name} before ZIP creation`,windows,async t=>{
+  const context=await fixture(t);tamper(context.identity);await writeFile(context.identityPath,json(context.identity));
   assert.throws(()=>pack(context));await absent(context.output);
 });
-test('real private packer refuses an uncommitted source change before ZIP creation',windows,async()=>{
-  const context=await fixture();await writeFile(path.join(context.root,'src/core/owned.ts'),'Changed owned fixture\n');
+test('real private packer refuses an uncommitted source change before ZIP creation',windows,async t=>{
+  const context=await fixture(t);await writeFile(path.join(context.root,'src/core/owned.ts'),'Changed owned fixture\n');
   assert.throws(()=>pack(context),error=>String(error.stderr).includes('Commit the private candidate'));
   await absent(context.output);
 });

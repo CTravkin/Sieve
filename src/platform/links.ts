@@ -25,11 +25,12 @@ export function installHiddenLinks(app:RuntimeApp,hiddenFiles:()=>NativeFile[],w
     Object.defineProperties(shadowMetadata,{vault:{value:shadowVault},uniqueFileLookup:{value:shadowLookup}});
     method(metadata,'iterateAllRefs').call(metadata,(sourcePath:string,reference:{link:string})=>{
       const link=reference.link.split('#',1)[0];
-      if(!link || (method(metadata,'getLinkpathDest').call(metadata,link,sourcePath) as NativeFile[]).length)return;
-      const resolved=method(metadata,'getLinkpathDest').call(shadowMetadata,link,sourcePath) as NativeFile[];
-      if(resolved.length!==1 || !byPath.has(resolved[0].path))return;
+      if(!link)return;
       const source=method(vault,'getFileByPath').call(vault,sourcePath);
       if(!source || seen.get(source)?.has(reference))return;
+      if((method(metadata,'getLinkpathDest').call(metadata,link,sourcePath) as NativeFile[]).length)return;
+      const resolved=method(metadata,'getLinkpathDest').call(shadowMetadata,link,sourcePath) as NativeFile[];
+      if(resolved.length!==1 || !byPath.has(resolved[0].path))return;
       const refs=seen.get(source)??new Set<unknown>();refs.add(reference);seen.set(source,refs);
       const item={sourceFile:source,reference,resolvedFile:resolved[0],resolvedPaths:[resolved[0].path]};snapshot.push(item);additions.push(item);
     });

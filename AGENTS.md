@@ -114,6 +114,11 @@ evidence from editor/UI evidence. Use exact vault IDs when names are ambiguous;
 never select a working vault by basename alone. Workspace diagnostics are optional
 for standalone checkouts; retain the same behavioral acceptance boundaries.
 
+Test scripts use `scripts/run-tests.mjs` and run-owned temporary directories.
+Preserve preexisting fixtures and explicitly supplied oracle executables.
+Runtime test bundles stay in memory; native oracle workers share one run-owned
+build. See `scripts/README.md` for direct invocation and cleanup limits.
+
 ### Versioning
 
 `package.json` owns `version` and integer `sieveBuild`; synchronize
