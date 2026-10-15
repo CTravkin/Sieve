@@ -186,6 +186,15 @@ function find(m: Glob, s: string): Index {
     }
     case 'row': {
       const prefix = children[0]?.kind === 'text' ? children[0].text : undefined;
+      // An ASCII byte cannot occur inside a decoded multibyte rune. Jump only
+      // between required prefix occurrences, preserving overlapping candidates.
+      if (prefix && prefix.charCodeAt(0) < 0x80) {
+        for (let i = s.indexOf(prefix); i !== -1; i = s.indexOf(prefix, i + 1)) {
+          if (s.length - i < m.len) break;
+          if (matchAll(s.slice(i), children)) return [i, [m.len]];
+        }
+        return none();
+      }
       for (let i = 0; i < s.length; i += decode(s, i)[1]) {
         if (s.length - i < m.len) break;
         if (prefix !== undefined && !s.startsWith(prefix,i)) continue;
