@@ -3,6 +3,8 @@ import { combiningClass, composeRunes, decomposeRune, nonStarterCounts } from '.
 import type { Platform } from './types.ts';
 
 export function nativeNormalize(text: string, platform: Platform): string {
+  // ASCII is already normalized in every pinned platform form.
+  if (/^[\x00-\x7f]*$/.test(text)) return text;
   const decomposed: number[] = [];
   let streamSafe = 0;
   const append = (rune: number): void => {

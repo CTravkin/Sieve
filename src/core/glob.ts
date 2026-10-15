@@ -37,16 +37,31 @@ function decode(s: string, index = 0): [number, number] {
   return [cp, width];
 }
 
-function runes(s: string): [number, number, number][] {
-  const out: [number, number, number][] = [];
-  for (let i = 0; i < s.length;) { const [r, w] = decode(s, i); out.push([i, r, w]); i += w; }
+function count(s: string): number {
+  let size = 0;
+  for (let i = 0; i < s.length; i += decode(s, i)[1]) size++;
+  return size;
+}
+function ends(s: string): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < s.length; i += decode(s, i)[1]) out.push(i);
+  out.push(s.length);
   return out;
 }
-const count = (s: string): number => runes(s).length;
-const ends = (s: string): number[] => [...runes(s).map(([i]) => i), s.length];
-const runeEnds = (s: string): number[] => runes(s).map(([i, r]) => i + byteLength(r));
-const firstSep = (s: string, sep: readonly number[]): number => runes(s).find(([, r]) => sep.includes(r))?.[0] ?? -1;
-const lastSep = (s: string, sep: readonly number[]): number => runes(s).reverse().find(([, r]) => sep.includes(r))?.[0] ?? -1;
+function runeEnds(s: string): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < s.length;) { const [r, width] = decode(s, i); out.push(i + byteLength(r)); i += width; }
+  return out;
+}
+function firstSep(s: string, sep: readonly number[]): number {
+  for (let i = 0; i < s.length;) { const [r, width] = decode(s, i); if (sep.includes(r)) return i; i += width; }
+  return -1;
+}
+function lastSep(s: string, sep: readonly number[]): number {
+  let last = -1;
+  for (let i = 0; i < s.length;) { const [r, width] = decode(s, i); if (sep.includes(r)) last = i; i += width; }
+  return last;
+}
 const make = (kind: Kind, len = -1, rest: Omit<Partial<Glob>, 'kind' | 'len'> = {}): Glob => ({ kind, len, ...rest });
 const text = (value: string): Glob => make('text', count(value), { text: value });
 
@@ -123,9 +138,11 @@ function find(m: Glob, s: string): Index {
     case 'super': return [0, ends(s)];
     case 'any': { const i = firstSep(s, m.sep!); return [0, ends(i === -1 ? s : s.slice(0, i))]; }
     case 'single': case 'list': case 'range': {
-      for (const [i, r] of runes(s)) {
+      for (let i = 0; i < s.length;) {
+        const [r, width] = decode(s, i);
         const yes = m.kind === 'single' ? !m.sep!.includes(r) : (m.kind === 'list' ? m.list!.includes(r) : r >= m.lo! && r <= m.hi!) !== m.not;
         if (yes) return [i, [byteLength(r)]];
+        i += width;
       }
       return none();
     }
@@ -169,7 +186,7 @@ function find(m: Glob, s: string): Index {
     }
     case 'row': {
       const prefix = children[0]?.kind === 'text' ? children[0].text : undefined;
-      for (const [i] of runes(s)) {
+      for (let i = 0; i < s.length; i += decode(s, i)[1]) {
         if (s.length - i < m.len) break;
         if (prefix !== undefined && !s.startsWith(prefix,i)) continue;
         if (matchAll(s.slice(i), children)) return [i, [m.len]];
