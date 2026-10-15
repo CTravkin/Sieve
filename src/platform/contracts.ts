@@ -4,7 +4,7 @@ export interface CacheEntry {type:'file'|'folder';realpath:string;[key:string]:u
 export interface PrivateAdapter {files:Record<string,CacheEntry>;basePath:string;fsPromises?:Record<string,unknown>;fs?:Record<string,unknown>;[key:string]:unknown}
 export interface NativeFile {path:string;name:string;deleted:boolean;[key:string]:unknown}
 export interface PrivateVault {adapter:unknown;configDir:string;load?:unknown;fileMap:Record<string,NativeFile>;[key:string]:unknown}
-export interface RuntimeApp {vault:PrivateVault;metadataCache:Record<string,unknown>;workspace:{layoutReady?:boolean;onLayoutReady:(callback:()=>void)=>unknown}}
+export interface RuntimeApp {vault:PrivateVault;metadataCache:Record<string,unknown>;fileManager:Record<string,unknown>;workspace:{layoutReady?:boolean;onLayoutReady:(callback:()=>void)=>unknown}}
 export type RuntimePhase='pending'|'applied'|'error'|'disposed';
 export interface FilterInstallation {readonly status:'ready'|'unsupported'|'error';readonly phase:RuntimePhase;readonly reloadNeeded:boolean;readonly initialStarted:boolean;readonly initialCompleted:boolean;readonly layoutReady:boolean;dispose():void}
 export interface FilterOptions {onChange?:()=>void}

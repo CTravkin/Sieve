@@ -6,6 +6,8 @@ export function capabilities(app:RuntimeApp,mobile:boolean):{adapter:PrivateAdap
   if(!vault.fileMap || typeof vault.fileMap!=='object' || !['onChange','addChild','removeChild','trigger'].every(k=>typeof vault[k]==='function') || !patchable(vault,'trigger') || !metadata || typeof metadata.initialized!=='boolean' || !['onDelete','updateRelatedLinks','deletePath','computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>typeof metadata[k]==='function') || !['deletePath','updateRelatedLinks','computeFileMetadataAsync','saveFileCache','queueFileForLinkResolution','trigger'].every(k=>patchable(metadata,k)))return;
   const lookup=metadata.uniqueFileLookup;
   if(!lookup || typeof lookup!=='object' || !['add','remove'].every(k=>typeof (lookup as Record<string,unknown>)[k]==='function' && patchable(lookup,k)))return;
+  if(typeof vault.getFileByPath!=='function' || !['iterateAllRefs','getLinkpathDest'].every(k=>typeof metadata[k]==='function') || typeof (lookup as Record<string,unknown>).get!=='function')return;
+  if(!app.fileManager || typeof app.fileManager.runAsyncLinkUpdate!=='function' || !patchable(app.fileManager,'runAsyncLinkUpdate'))return;
   const adapter=app.vault.adapter as PrivateAdapter;
   const keys=['listRecursiveChild','reconcileFile','listRecursive','trigger','reconcileFolderCreation','reconcileFileCreation','rename',...(mobile?['watchAndList','reconcileFileChanged','quickList']:['listAll','reconcileFileInternal'])];
   const provider=mobile?adapter.fs:adapter.fsPromises;

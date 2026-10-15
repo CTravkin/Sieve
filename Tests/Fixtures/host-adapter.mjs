@@ -1,3 +1,4 @@
+import {attachLinkManager} from './link-manager.mjs';
 export const hostKey=path=>path.replace(/[\\/]+/g,'/').replace(/^\/+|\/+$/g,'').replace(/[\u00a0\u202f]/g,' ').normalize('NFC')||'/';
 const parentOf=path=>path.includes('/')?path.slice(0,path.lastIndexOf('/')):'';
 class AbstractFile {
@@ -129,5 +130,6 @@ export function fakeHost(mobile=false,paths=['Technical/secret.md','notes/public
     };
     vault.on('modify',changed=>view.onModify(changed));vault.on('delete',removed=>{if(removed===view.file)view.file=null;});return view;
   };
-  return {app,adapter,physical,io,events,vaultEvents,metadata,metadataCache,explorer,lookup,layout,openEditor,get indexed(){return new Map(Object.entries(vault.fileMap).filter(([key])=>key!=='/'));}};
+  const host={app,adapter,physical,io,events,vaultEvents,metadata,metadataCache,explorer,lookup,layout,openEditor,get indexed(){return new Map(Object.entries(vault.fileMap).filter(([key])=>key!=='/'));}};
+  attachLinkManager(host);return host;
 }

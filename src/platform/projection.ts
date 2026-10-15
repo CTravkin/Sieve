@@ -1,13 +1,15 @@
 import type {CacheEntry,HostMethod,NativeFile,PrivateAdapter,RuntimeApp} from './contracts.ts';
 import {method} from './contracts.ts';
+import {installHiddenLinks} from './links.ts';
 
-export type Wrap=(owner:object,key:string,body:(original:HostMethod,args:unknown[])=>unknown)=>void;
+export type Wrap=(owner:object,key:string,body:(original:HostMethod,args:unknown[])=>unknown,nativeFailureFatal?:boolean)=>void;
 /** Physical adapter cache remains native; only the Vault content projection is hidden. */
-export function installProjection(app:RuntimeApp,adapter:PrivateAdapter,ignored:(real:string)=>boolean,wrap:Wrap,beforeRenameCallback:()=>void) {
+export function installProjection(app:RuntimeApp,adapter:PrivateAdapter,ignored:(real:string)=>boolean,wrap:Wrap,beforeRenameCallback:()=>void,failed:()=>void) {
   const vault=app.vault;const metadata=app.metadataCache;const hidden=new Map<string,{file:NativeFile;cache:CacheEntry}>();
   const lookup=metadata.uniqueFileLookup as Record<string,unknown>;const shadows=new WeakMap<object,NativeFile>();
   const returning=new WeakMap<NativeFile,boolean>();
   let removing:{file:NativeFile;deleted:boolean;path:string}|undefined;
+  const stopLinks=installHiddenLinks(app,()=>[...hidden.values()].filter(entry=>entry.cache.type==='file').map(entry=>entry.file),wrap,failed);
   const indexed=(key:string):NativeFile|undefined=>Object.prototype.hasOwnProperty.call(vault.fileMap,key)?vault.fileMap[key]:undefined;
   let startupPruning=0;
   wrap(metadata,'deletePath',(original,args)=>{
@@ -92,6 +94,7 @@ export function installProjection(app:RuntimeApp,adapter:PrivateAdapter,ignored:
     return original.apply(metadata,args);
   });
   return {
+    dispose():void {stopLinks();hidden.clear();},
     indexed,
     has:(key:string):boolean=>hidden.has(key),
     restore,

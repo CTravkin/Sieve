@@ -68,7 +68,8 @@ export function installFilter(app:RuntimeApp,matcher:Matcher,platform:Platform,o
     restores.push(()=>{if(Object.getOwnPropertyDescriptor(owner,key)?.value!==wrapper)return;if(descriptor)Object.defineProperty(owner,key,descriptor);else delete (owner as Record<string,unknown>)[key];});
   }
   try {
-    projection=installProjection(app,adapter,real=>decide(real).ignored,wrap,()=>cleanDirty(true));
+    projection=installProjection(app,adapter,real=>decide(real).ignored,wrap,()=>cleanDirty(true),failed);
+    restores.push(()=>projection.dispose());
     wrap(adapter,'trigger',function(original,args){
       const [type,keyValue,oldValue]=args;const key=typeof keyValue==='string'?keyValue:'';const old=typeof oldValue==='string'?oldValue:'';const decision=decide(realFor(key));
       if(type==='raw' && decision.ignored)return;
