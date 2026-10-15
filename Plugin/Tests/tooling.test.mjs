@@ -23,7 +23,7 @@ test('runtime imports share one pending bundle and module for the same source an
   assert.equal(loadRuntime('i18n/index'), first);
   const [left, right] = await Promise.all([first, loadRuntime('i18n/index')]);
   assert.equal(left, right);
-  assert.equal(left.locale('ru').settings.description, 'Исключает файлы и каталоги перед индексацией хранилища');
+  assert.equal(left.locale('ru').settings.description, 'Исключает файлы и каталоги перед индексацией хранилища.');
   assert.equal(await loadRuntime('i18n/index'), left);
 });
 

@@ -16,6 +16,10 @@ Obsidian 1.14.4 or later is required. Desktop behavior has been tested on Window
 
 Filtering uses Obsidian internals. Unsupported runtime structures leave the vault unfiltered and show a notice.
 
+## Data access
+
+Sieve runs locally without network requests or telemetry. On desktop, vault display names read Obsidian's vault registry and Sieve settings in other registered vaults. Included rule files are read from the configured paths, which can be outside the current vault. Writes are limited to Sieve's settings and its single recovery snapshot.
+
 ## Operations
 
 ### Installation

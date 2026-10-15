@@ -1,7 +1,7 @@
 {
   "settings": {
     "title": "Sieve",
-    "description": "Excludes files and folders before vault indexing",
+    "description": "Excludes files and folders before vault indexing.",
     "rulesLabel": "Filter rules",
     "rulesDescription": "One rule per line; the first match applies",
     "rulesPlaceholder": "*.tmp\n/build\n**/cache",
