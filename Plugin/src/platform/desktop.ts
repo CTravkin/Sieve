@@ -36,6 +36,7 @@ export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefin
     return {vaults,validate(){return sameVaults(registry(),vaults);},async read(vault){
       const entry=vault.id?byId.get(vault.id):byPath.get(vault.path);
       if(!entry || entry.path!==vault.path || !adapter.fsPromises || typeof adapter.fsPromises.readFile!=='function')throw Error('Alias read unavailable');
+      // Other vaults store overrides by ID; absent overrides use Obsidian's default.
       const override=entry.isCurrentVault?configDir:host?.localStorage?.getItem(entry.id+'-config')||'.obsidian';
       if(typeof override!=='string' || !override || /^(?:[a-z]:|[\\/])/i.test(override) || override.split(/[\\/]/).some(part=>part==='..' || part==='.' || !part))throw Error('Alias config unavailable');
       const path=host?.require?.('path') as Partial<NativePath>|undefined;if(typeof path?.join!=='function')throw Error('Alias read unavailable');

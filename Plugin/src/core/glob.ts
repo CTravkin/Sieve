@@ -12,7 +12,7 @@ type Index = [number, number[]];
 const none = (): Index => [-1, []];
 const encoder = new TextEncoder();
 const encode = (s: string): string => {
-  if (/^[\x00-\x7f]*$/.test(s)) return s;
+  if (!/[\u0080-\uffff]/.test(s)) return s;
   const bytes = encoder.encode(s); let result = '';
   for (let offset=0;offset<bytes.length;offset+=8192) result += String.fromCharCode(...bytes.subarray(offset,offset+8192));
   return result;

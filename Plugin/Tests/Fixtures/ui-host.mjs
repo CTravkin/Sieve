@@ -4,6 +4,8 @@ export const uiSdk = `
 export class Element {
   constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';this.ownerDocument={createDocumentFragment:()=>globalThis.__sieveTestForeignWindow?new ForeignDocumentFragment():new DocumentFragment()};}
   createEl(tag,options={}){const el=new Element(tag);el.parentElement=this;el._text=options.text||'';if(options.cls)el.addClass(...options.cls.split(' '));Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
+  createDiv(options={}){return this.createEl('div',options);}
+  createSpan(options={}){return this.createEl('span',options);}
   empty(){this.children=[];this._text='';}
   setText(text){this.empty();if(text instanceof DocumentFragment){this.children=text.children;for(const child of this.children)child.parentElement=this;text.children=[];}else this._text=String(text);}
   prepend(child){if(child.parentElement)child.parentElement.children=child.parentElement.children.filter(el=>el!==child);child.parentElement=this;this.children.unshift(child);}

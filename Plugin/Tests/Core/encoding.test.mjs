@@ -4,6 +4,16 @@ import test from 'node:test';
 import {compileRules} from '../../.build/core/matcher.mjs';
 import {loadCoreModule} from '../Fixtures/load-core.mjs';
 
+test('glob path encoding preserves every ASCII byte and encodes non-ASCII UTF-16 boundaries',async()=>{
+  const {encodeGlobPath}=await loadCoreModule('glob');
+  const encoder=new TextEncoder();
+  for(let cp=0;cp<=0xffff;cp+=128){
+    const text=Array.from({length:128},(_,i)=>String.fromCharCode(cp+i)).join('');
+    assert.equal(encodeGlobPath(text),String.fromCharCode(...encoder.encode(text)),`UTF-16 block ${cp}`);
+  }
+  for(const text of ['','last\n','\u007f\u0080','\ud83d\ude00','\ud800word\udfff'])assert.equal(encodeGlobPath(text),String.fromCharCode(...encoder.encode(text)));
+});
+
 test('standalone globs still accept ordinary Unicode paths without prepared encoding',async()=>{
   const {compileGlob}=await loadCoreModule('glob');const glob=compileGlob('**/Текст.md');
   assert.equal(glob('Каталог/Текст.md'),true);assert.equal(glob('Каталог/Другой.md'),false);assert.equal(glob('Каталог/Текст.txt'),false);
