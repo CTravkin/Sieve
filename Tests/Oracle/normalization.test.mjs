@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { nativeUnicodeNormalization, normalizeWithOracle } from '../../Tools/Oracle/runner.mjs';
+import { nativeUnicodeNormalization, normalizeWithOracle } from '../../scripts/Oracle/runner.mjs';
 import { loadCoreModule } from '../Fixtures/load-core.mjs';
 
 test('pinned normalization matches native Go on every decomposition, composition, CCC and Hangul syllable', async t => {

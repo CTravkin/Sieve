@@ -9,9 +9,12 @@ Obsidian plugin that filters files and folders before vault indexing.
 ### Structure
 
 This is the separate private `CTravkin/Sieve` application repository inside
-the [CJA PC workspace](../../AGENTS.md). Source, tests, maintained tools and
-shipped documentation stay here. Shared reports and inherited plans belong
-to the parent workspace; do not create parallel task-material trees here.
+the [CJA PC workspace](../AGENTS.md). Source, tests, build scripts, the native
+matcher oracle and shipped documentation stay here. Internal requirements,
+architecture, acceptance and version policy belong to `../Docs/Sieve`.
+Diagnostic probes and benchmarks belong to `../Tools/Sieve`. Shared reports
+and inherited plans belong to the parent workspace; do not create parallel
+task-material trees here. Standalone checkouts do not require these siblings.
 
 ### Constraints
 
@@ -26,20 +29,21 @@ host/device evidence; source-based hypotheses alone do not pass that gate.
 
 | Location | Purpose |
 | --- | --- |
-| [Docs](Docs/Requirements.md) | Shipped requirements and technical references |
-| [Work](../../Work/README.md) | Shared work register |
-| [Legacy plan](<../../Work/Plans/Sieve/2026-10-13 23-01 Разработка Sieve - План выполнения.md>) | Development stages and acceptance gates |
-| [Dev](../../Dev/README.md) | Shared implementation reports and state |
-| [QA](../../QA/README.md) | Shared verification reports and evidence |
-| [Review](../../Review/README.md) | Shared engineering reviews |
-| [Ops](../../Ops/README.md) | Shared operational results |
-| [Tools](Tools/TOOLS.md) | Application build, probe and packaging tools |
+| [Docs](Docs/README.md) | Shipped syntax, settings and installation references |
+| [Work](../Work/README.md) | Shared work register |
+| [Legacy plan](<../Work/Plans/Sieve/2026-10-13 23-01 Разработка Sieve - План выполнения.md>) | Development stages and acceptance gates |
+| [Dev](../Dev/README.md) | Shared implementation reports and state |
+| [QA](../QA/README.md) | Shared verification reports and evidence |
+| [Review](../Review/README.md) | Shared engineering reviews |
+| [Ops](../Ops/README.md) | Shared operational results |
+| [scripts](scripts/README.md) | Repository build, packaging and native matcher verification |
+| [Diagnostics](../Tools/Sieve/README.md) | Workspace probes and benchmarks |
 
 ### Storage
 
 Keep application configuration, assets, source and tests in their native paths.
 Local environments and generated `dist` stay untracked. Disposable probe
-fixtures and diagnostics follow Tools' inventory and shared-workspace storage.
+fixtures and diagnostics follow the shared diagnostics inventory and shared-workspace storage.
 Keep only useful evidence after task cleanup.
 
 ### Git
@@ -56,9 +60,9 @@ explicit exceptions to the general local-material baseline.
 
 | Topic | Source | Purpose |
 | --- | --- | --- |
-| Artifact templates | [Templates](../../../../.codex/Templates/README.md) | Shared artifact formats and registers |
-| Product guarantees | [Requirements](Docs/Requirements.md) | Filtering, settings and platform contracts |
-| Version policy | [Versioning](Docs/Versioning.md) | Authoritative version/build rules |
+| Artifact templates | [Templates](../../../.codex/Templates/README.md) | Shared artifact formats and registers |
+| Product guarantees | [Requirements](../Docs/Sieve/Requirements.md) | Filtering, settings and platform contracts |
+| Version policy | [Versioning](../Docs/Sieve/Versioning.md) | Authoritative version/build rules |
 | Matcher syntax | [English](Docs/Syntax.en.md) · [Russian](Docs/Syntax.ru.md) | Full supported syntax |
 | Packaging | [Private package](Docs/Private-Package.md) | Candidate inventory and clean-build requirements |
 
@@ -115,7 +119,7 @@ invent values or reuse a published tag for another build.
 
 ### Delivery
 
-Use the canonical Tools build/packaging commands and Private-Package procedure.
+Use the canonical scripts build/packaging commands and Private-Package procedure.
 Private ZIPs require a clean local commit, matching identity and exact verified
 inventory. Native installation and performance checks remain separate.
 Public release version, license, release creation and repository visibility

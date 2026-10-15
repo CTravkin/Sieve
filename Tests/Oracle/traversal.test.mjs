@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compileRules } from '../../dist/core/matcher.mjs';
-import { runOracle } from '../../Tools/Oracle/runner.mjs';
+import { runOracle } from '../../scripts/Oracle/runner.mjs';
 import { projectTree } from '../Fixtures/tree.mjs';
 
 const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';

@@ -26,11 +26,11 @@ foreach ($sieveName in $sieveInventoryNames) {
 }
 $sieveExpectedNames = @('main.js', 'manifest.json', 'INSTALL.md', 'THIRD-PARTY-NOTICES.md')
 if (Test-Path -LiteralPath (Join-Path $sieveRepository 'styles.css')) { $sieveExpectedNames += 'styles.css' }
-foreach ($sieveSourceDirectory in @('Tools\Oracle\licenses', 'src\core')) {
+foreach ($sieveSourceDirectory in @('scripts\Oracle\licenses', 'src\core')) {
     $sieveSourcePath = Assert-SievePackagePath -RepositoryRoot $sieveRepository -Path (Join-Path $sieveRepository $sieveSourceDirectory)
     foreach ($sieveSourceEntry in Get-ChildItem -LiteralPath $sieveSourcePath -Force) {
         $null = Assert-SievePackagePath -RepositoryRoot $sieveRepository -Path $sieveSourceEntry.FullName
-        if ($sieveSourceDirectory -eq 'Tools\Oracle\licenses') {
+        if ($sieveSourceDirectory -eq 'scripts\Oracle\licenses') {
             if ($sieveSourceEntry.PSIsContainer) { throw 'Package license source must contain regular files' }
             $sieveExpectedNames += 'licenses/' + $sieveSourceEntry.Name
         } elseif (-not $sieveSourceEntry.PSIsContainer -and $sieveSourceEntry.Name -cmatch '\.ts$') { $sieveExpectedNames += 'src/core/' + $sieveSourceEntry.Name }

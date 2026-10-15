@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { runOracle } from '../../Tools/Oracle/runner.mjs';
+import { runOracle } from '../../scripts/Oracle/runner.mjs';
 
 test('native oracle reports pinned platform flags and first-match decisions', async () => {
   const [result] = await runOracle([{ name: 'first-match', rules: '!keep.md\n(?d)*', paths: ['keep.md', 'hide.txt', '.stignore'] }]);

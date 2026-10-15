@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { compileRules } from '../../dist/core/matcher.mjs';
-import { runOracle, nativeUnicodeLower } from '../../Tools/Oracle/runner.mjs';
+import { runOracle, nativeUnicodeLower } from '../../scripts/Oracle/runner.mjs';
 import { upstreamFixtures, upstreamCoverage } from '../Fixtures/upstream.mjs';
 
 const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';

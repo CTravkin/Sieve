@@ -7,7 +7,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 
 const repository=fileURLToPath(new URL('../../',import.meta.url));
-const helper=path.join(repository,'Tools/package-paths.ps1');
+const helper=path.join(repository,'scripts/package-paths.ps1');
 const quote=value=>"'"+value.replaceAll("'","''")+"'";
 async function fixture(){
   const directory=path.join(repository,'Local/.temp/Development/2026-10-14',`package-boundary-${randomUUID()}`);

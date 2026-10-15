@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { checkProject } from '../Tools/check-project.mjs';
+import { checkProject } from '../scripts/check-project.mjs';
 
 test('repository assets preserve the approved locale and version contracts', async () => {
   const result = await checkProject();

@@ -2,7 +2,7 @@
 
 [Русский](Syntax.ru.md) · [English](Syntax.en.md)
 
-Эталон Sieve — Syncthing 2.1.6. Общий matcher сравнен с нативным oracle на Windows и Linux без расхождений в проверенном корпусе. Интеграция с Obsidian и остальные платформы проверяются отдельно; pin и команды описаны в [Oracle](../Tools/Oracle/README.md).
+Эталон Sieve — Syncthing 2.1.6. Общий matcher сравнен с нативным oracle на Windows и Linux без расхождений в проверенном корпусе. Интеграция с Obsidian и остальные платформы проверяются отдельно; pin и команды описаны в [Oracle](../scripts/Oracle/README.md).
 
 ## Порядок правил
 

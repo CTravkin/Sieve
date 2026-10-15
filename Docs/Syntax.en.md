@@ -2,7 +2,7 @@
 
 [Русский](Syntax.ru.md) · [English](Syntax.en.md)
 
-Sieve uses Syncthing 2.1.6 as its reference. The common matcher agrees with the native Windows and Linux oracle across the tested corpus. Obsidian integration and other platforms require separate verification; see [Oracle](../Tools/Oracle/README.md) for pins and commands.
+Sieve uses Syncthing 2.1.6 as its reference. The common matcher agrees with the native Windows and Linux oracle across the tested corpus. Obsidian integration and other platforms require separate verification; see [Oracle](../scripts/Oracle/README.md) for pins and commands.
 
 ## Rule order
 

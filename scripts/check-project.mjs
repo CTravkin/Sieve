@@ -78,7 +78,11 @@ export async function checkProject() {
       let target = match[1].replace(/^<|>$/g, '').split('#')[0];
       if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
       target = decodeURIComponent(target);
-      await access(path.resolve(path.dirname(file), target));
+      // Workspace instructions may link to sibling materials. A standalone
+      // checkout validates its own documents without requiring that workspace.
+      const resolved = path.resolve(path.dirname(file), target);
+      if (file === path.join(root, 'AGENTS.md') && path.relative(root, resolved).startsWith('..')) continue;
+      await access(resolved);
       linkCount++;
     }
   }

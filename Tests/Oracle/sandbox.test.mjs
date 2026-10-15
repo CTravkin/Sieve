@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, stat, chmod, rm } from 'node:fs/pr
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { runOracle } from '../../Tools/Oracle/runner.mjs';
+import { runOracle } from '../../scripts/Oracle/runner.mjs';
 
 test('unsafe alias and permission plans reject before touching an own external sentinel on every OS', async () => {
   const temporary = fileURLToPath(new URL('../../Local/.temp/Oracle/', import.meta.url));

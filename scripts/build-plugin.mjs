@@ -34,11 +34,11 @@ async function sourceTree(directory) {
   }
 }
 await sourceTree('src');
-sourceFiles.add('Tools/build-plugin.mjs');
+sourceFiles.add('scripts/build-plugin.mjs');
 sourceFiles.add('Docs/Private-Package.md');
 sourceFiles.add('THIRD-PARTY-NOTICES.md');
 sourceFiles.add('tsconfig.json');
-await sourceTree('Tools/Oracle/licenses');
+await sourceTree('scripts/Oracle/licenses');
 try { await readFile(path.join(root, 'styles.css')); sourceFiles.add('styles.css'); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
 const sourceDigest = createHash('sha256').update(JSON.stringify(metadata.devDependencies));
@@ -70,11 +70,11 @@ await writeFile(path.join(output, 'manifest.json'), await readFile(path.join(roo
 await writeFile(path.join(output, 'INSTALL.md'), await readFile(path.join(root, 'Docs/Private-Package.md')));
 if (sourceFiles.has('styles.css')) await writeFile(path.join(output, 'styles.css'), await readFile(path.join(root, 'styles.css')));
 else { try { await unlink(path.join(output, 'styles.css')); } catch (error) { if (error.code !== 'ENOENT') throw error; } }
-const notices = (await readFile(path.join(root, 'THIRD-PARTY-NOTICES.md'), 'utf8')).replaceAll('Tools/Oracle/licenses/', 'licenses/');
+const notices = (await readFile(path.join(root, 'THIRD-PARTY-NOTICES.md'), 'utf8')).replaceAll('scripts/Oracle/licenses/', 'licenses/');
 await writeFile(path.join(output, 'THIRD-PARTY-NOTICES.md'), notices);
 await mkdir(path.join(output, 'licenses'), { recursive: true });
-for (const name of await readdir(path.join(root, 'Tools/Oracle/licenses'))) {
-  await writeFile(path.join(output, 'licenses', name), await readFile(path.join(root, 'Tools/Oracle/licenses', name)));
+for (const name of await readdir(path.join(root, 'scripts/Oracle/licenses'))) {
+  await writeFile(path.join(output, 'licenses', name), await readFile(path.join(root, 'scripts/Oracle/licenses', name)));
 }
 // Preserve the covered source form together with its upstream licenses.
 await mkdir(path.join(output, 'src/core'), { recursive: true });
@@ -84,7 +84,7 @@ for (const name of await readdir(path.join(root, 'src/core'))) {
 const hash = async file => createHash('sha256').update(await readFile(path.join(output, file))).digest('hex');
 const files = ['main.js', 'manifest.json', 'INSTALL.md', 'THIRD-PARTY-NOTICES.md'];
 if (sourceFiles.has('styles.css')) files.push('styles.css');
-for (const name of await readdir(path.join(root, 'Tools/Oracle/licenses'))) files.push(`licenses/${name}`);
+for (const name of await readdir(path.join(root, 'scripts/Oracle/licenses'))) files.push(`licenses/${name}`);
 for (const name of await readdir(path.join(root, 'src/core'))) if (name.endsWith('.ts')) files.push(`src/core/${name}`);
 const identity = {
   privateCandidate: true,

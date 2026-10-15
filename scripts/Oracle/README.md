@@ -27,8 +27,8 @@ Additional commands:
 - `unicode-lower`: every Go simple lowercase rune mapping
 - `unicode-normalization`: pinned canonical decomposition, CCC, composition and stream-safe properties
 - `normalize`: JSON string array on stdin, native NFC/NFD results on stdout
-- `node Tools/Oracle/generate-unicode.mjs`: reproducibly generate the portable Unicode 17 tables with a checked toolchain
-- `node Tools/Oracle/minimize.mjs`: minimize the saved generated mismatch corpus into replay fixtures; use before fixing a mismatch
+- `node scripts/Oracle/generate-unicode.mjs`: reproducibly generate the portable Unicode 17 tables with a checked toolchain
+- `node scripts/Oracle/minimize.mjs`: minimize the saved generated mismatch corpus into replay fixtures; use before fixing a mismatch
 
 Native errors and quirks are compatibility evidence. For example, the pinned glob optimizer matches `a/**/b` against `a/b`, and some compound wildcard matchers use UTF-8 byte offsets. The port preserves these results. The matcher accepts clean relative paths in native Unicode normalization; normalization is available to adapters separately from `matcher.match`.
 

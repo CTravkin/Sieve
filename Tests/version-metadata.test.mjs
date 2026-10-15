@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateVersionMetadata } from '../Tools/check-project.mjs';
+import { validateVersionMetadata } from '../scripts/check-project.mjs';
 
 test('planning assets can remain without a release version or build number', () => {
   assert.deepEqual(validateVersionMetadata({}, {}, {}), { versionAssigned: false, version: null });
