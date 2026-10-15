@@ -1,4 +1,4 @@
-import {Notice,PluginSettingTab,Setting,getLanguage,setIcon} from 'obsidian';
+import {Notice,PluginSettingTab,SettingGroup,getLanguage,setIcon} from 'obsidian';
 import type {App,ButtonComponent,TextAreaComponent,TextComponent} from 'obsidian';
 import type SievePlugin from '../main.ts';
 import type {SettingsError} from '../settings/storage.ts';
@@ -34,38 +34,48 @@ export class SieveSettingsTab extends PluginSettingTab {
     this.unsubscribe?.();this.visible=true;
     if(!this.hydrated)this.draft=this.sieve.draftSettings??defaultSettings();
     const text=locale(getLanguage()).settings;const container=this.containerEl;container.empty();container.addClass('sieve-settings');
-    const heading=container.createEl('h2',{cls:'sieve-settings-heading'});
+    const title=container.ownerDocument.createDocumentFragment();
+    const heading=title.createEl('span',{cls:'sieve-settings-heading',attr:{role:'heading','aria-level':'2'}});
     setIcon(heading.createEl('span',{cls:'sieve-settings-icon',attr:{'aria-hidden':'true'}}),this.icon);
     heading.createEl('span',{text:text.title});
-    const rulesSetting=new Setting(container).setName(text.rulesLabel).setDesc(text.rulesDescription).setClass('sieve-rules-setting');
-    rulesSetting.descEl.setAttr('id','sieve-rules-description');
-    rulesSetting.addTextArea(input=>{
-      this.rules=input;input.setValue(this.draft.rules).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,rules:value}));
-      input.setPlaceholder(text.rulesPlaceholder);
-      input.inputEl.setAttr('aria-label',text.rulesLabel);input.inputEl.setAttr('aria-describedby','sieve-rules-description sieve-settings-errors');input.inputEl.setAttr('spellcheck','false');input.inputEl.rows=12;input.inputEl.wrap='off';
-      input.inputEl.addEventListener('focus',()=>input.setPlaceholder(''));
-      input.inputEl.addEventListener('blur',event=>{
+    const filterGroup=new SettingGroup(container).setHeading(title);
+    filterGroup.addSetting(rulesSetting=>{
+      rulesSetting.setName(text.rulesLabel).setDesc(text.rulesDescription).setClass('sieve-rules-setting');
+      rulesSetting.descEl.setAttr('id','sieve-rules-description');
+      rulesSetting.addTextArea(input=>{
+        this.rules=input;input.setValue(this.draft.rules).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,rules:value}));
         input.setPlaceholder(text.rulesPlaceholder);
-        // A native button click follows blur. Let Save validate authoritatively
-        // instead of disabling the button before that first click can arrive.
-        if(event.relatedTarget===this.saveButton?.buttonEl)return;
-        return this.validateRules();
+        input.inputEl.setAttr('aria-label',text.rulesLabel);input.inputEl.setAttr('aria-describedby','sieve-rules-description sieve-settings-errors');input.inputEl.setAttr('spellcheck','false');input.inputEl.rows=12;input.inputEl.wrap='off';
+        input.inputEl.addEventListener('focus',()=>input.setPlaceholder(''));
+        input.inputEl.addEventListener('blur',event=>{
+          input.setPlaceholder(text.rulesPlaceholder);
+          // A native button click follows blur. Let Save validate authoritatively
+          // instead of disabling the button before that first click can arrive.
+          if(event.relatedTarget===this.saveButton?.buttonEl)return;
+          return this.validateRules();
+        });
+      });
+      this.errorsEl=rulesSetting.settingEl.createEl('div',{cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
+    });
+    filterGroup.addSetting(syntaxSetting=>{
+      syntaxSetting.setName(text.syntaxLabel).addButton(button=>button.setButtonText(text.openHelp).onClick(()=>{this.help?.close();this.help=new SyntaxHelpModal(this.app);this.help.open();}));
+      syntaxSetting.descEl.addClass('sieve-syntax-examples');
+      for(const example of Object.values(text.syntaxExamples)){
+        const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
+        row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:' '+example.description});
+      }
+    });
+    new SettingGroup(container).addSetting(nameSetting=>{
+      nameSetting.setName(text.displayNameLabel).setDesc(text.displayNameDescription).setClass('sieve-display-name-setting');
+      nameSetting.descEl.setAttr('id','sieve-display-name-description');
+      nameSetting.addText(input=>{
+        this.displayName=input;input.setValue(this.draft.displayName).setPlaceholder(this.app.vault.getName()).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,displayName:value}));input.inputEl.setAttr('aria-label',text.displayNameLabel);input.inputEl.setAttr('aria-describedby','sieve-display-name-description');
       });
     });
-    this.errorsEl=rulesSetting.settingEl.createEl('div',{cls:'sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});
-    const syntaxSetting=new Setting(container).setName(text.syntaxLabel).addButton(button=>button.setButtonText(text.openHelp).onClick(()=>{this.help?.close();this.help=new SyntaxHelpModal(this.app);this.help.open();}));
-    syntaxSetting.descEl.addClass('sieve-syntax-examples');
-    for(const example of Object.values(text.syntaxExamples)){
-      const row=syntaxSetting.descEl.createEl('div',{cls:'sieve-syntax-example'});
-      row.createEl('code',{text:example.rule,cls:'sieve-syntax-pattern'});if('description' in example)row.createEl('span',{text:example.description});
-    }
-    const nameSetting=new Setting(container).setName(text.displayNameLabel).setDesc(text.displayNameDescription).setClass('sieve-display-name-setting');
-    nameSetting.descEl.setAttr('id','sieve-display-name-description');
-    nameSetting.addText(input=>{
-      this.displayName=input;input.setValue(this.draft.displayName).setPlaceholder(this.app.vault.getName()).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,displayName:value}));input.inputEl.setAttr('aria-label',text.displayNameLabel);input.inputEl.setAttr('aria-describedby','sieve-display-name-description');
+    new SettingGroup(container).addSetting(saveSetting=>{
+      saveSetting.setName(text.statusLabel).addButton(button=>{this.saveButton=button;button.setButtonText(text.save).setCta().setDisabled(this.saving).onClick(()=>this.save());});
+      this.statusEl=saveSetting.descEl;this.statusEl.addClass('sieve-status');this.statusEl.setAttr('role','status');this.statusEl.setAttr('aria-live','polite');this.statusEl.setAttr('aria-atomic','true');
     });
-    const saveSetting=new Setting(container).setName(text.statusLabel).addButton(button=>{this.saveButton=button;button.setButtonText(text.save).setCta().setDisabled(this.saving).onClick(()=>this.save());});
-    this.statusEl=saveSetting.descEl;this.statusEl.addClass('sieve-status');this.statusEl.setAttr('role','status');this.statusEl.setAttr('aria-live','polite');this.statusEl.setAttr('aria-atomic','true');
     this.unsubscribe=this.sieve.subscribeStatus(()=>this.refresh());this.refresh();
   }
   private edit(draft:SieveSettings):void {

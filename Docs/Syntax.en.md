@@ -2,7 +2,7 @@
 
 [Русский](Syntax.ru.md) · [English](Syntax.en.md)
 
-Sieve uses the same filter syntax as Syncthing and is compatible with its filter rules.
+Filter syntax follows Syncthing and is fully compatible with its rules.
 
 ## Rule order
 

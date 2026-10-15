@@ -84,6 +84,8 @@ references and localization retain their English/Russian language pairs.
 - EN/RU settings strings belong to `src/locales/en.json` and `ru.json`;
   keys and placeholders must match. Mention compatibility in detailed help and
   GitHub documentation, never in the main settings screen or manifest description.
+- Use native `SettingGroup` cards and settings typography. Custom CSS is limited
+  to necessary layout, agreed control sizes, emphasis and readable status colors.
 - Target desktop, iOS and Android. Node/Electron do not enter shared/mobile
   code; desktop-specific access remains behind its platform boundary.
 - Constantine permits common development and source-based platform hypotheses

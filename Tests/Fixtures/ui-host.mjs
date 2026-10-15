@@ -1,8 +1,8 @@
 // SDK/DOM boundary doubles. These verify plugin code, not native Obsidian UI.
 export const uiSdk = `
 export class Element {
-  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';}
-  createEl(tag,options={}){const el=new Element(tag);el.parentElement=this;el._text=options.text||'';if(options.cls)el.addClass(options.cls);Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
+  constructor(tag='div'){this.tag=tag;this.children=[];this.attributes={};this.classes=new Set();this.listeners=new Map();this.value='';this.disabled=false;this._text='';this.ownerDocument={createDocumentFragment:()=>new Element('fragment')};}
+  createEl(tag,options={}){const el=new Element(tag);el.parentElement=this;el._text=options.text||'';if(options.cls)el.addClass(...options.cls.split(' '));Object.assign(el.attributes,options.attr||{});this.children.push(el);return el;}
   empty(){this.children=[];this._text='';}
   setText(text){this._text=text;}
   setAttr(key,value){this.attributes[key]=String(value);}
@@ -47,6 +47,11 @@ export class Setting {
   addText(callback){callback(new TextComponent(this.controlEl));return this;}
   addTextArea(callback){callback(new TextAreaComponent(this.controlEl));return this;}
   addButton(callback){callback(new ButtonComponent(this.controlEl));return this;}
+}
+export class SettingGroup {
+  constructor(container){this.groupEl=container.createEl('div',{cls:'setting-group'});this.listEl=this.groupEl.createEl('div',{cls:'setting-items'});}
+  setHeading(fragment){const header=this.groupEl.createEl('div',{cls:'setting-item setting-item-heading'});header.children=fragment.children;for(const child of header.children)child.parentElement=header;this.groupEl.children=[header,...this.groupEl.children.filter(child=>child!==header)];return this;}
+  addSetting(callback){callback(new Setting(this.listEl));return this;}
 }
 export class MarkdownRenderer {static async render(app,markdown,el,path,component){el.setText(markdown);(globalThis.__sieveRenders??=[]).push({markdown,path,component});}}
 export const Platform={isDesktopApp:true,isWin:false,isMacOS:false,isLinux:true};

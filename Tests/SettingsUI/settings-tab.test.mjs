@@ -180,8 +180,12 @@ test('native settings rows show examples, vault-folder placeholder and status be
       for(const row of examples)assert.ok(element(row,'code').classes.has('sieve-syntax-pattern'));
       for(const row of examples.slice(0,4))assert.ok(element(row,'span').textContent);
       assert.equal(element(examples[4],'span'),undefined);
+      const group=h.tab.containerEl.descendants().find(el=>el.classes.has('setting-items'));
+      assert.ok(group,'rules and syntax use a native setting group');assert.equal(group.children.length,2);
+      assert.equal(element(h.tab.containerEl,'textarea').parentElement.parentElement,group.children[0]);
+      assert.equal(element(h.tab.containerEl,'button',language==='ru'?'Справка':'Help').parentElement.parentElement,group.children[1]);
       assert.equal(h.tab.icon,'layers');
-      const heading=element(h.tab.containerEl,'h2');assert.equal(heading.textContent.trim(),'Sieve');
+      const heading=h.tab.containerEl.descendants().find(el=>el.attributes.role==='heading');assert.equal(heading.attributes['aria-level'],'2');assert.equal(heading.textContent.trim(),'Sieve');
       assert.ok(heading.descendants().some(el=>el.attributes['data-icon']==='layers'&&el.attributes['aria-hidden']==='true'));
       assert.doesNotMatch(h.tab.containerEl.textContent,/Excludes files|Исключает файлы/);
       assert.equal(element(h.tab.containerEl,'input').placeholder,'Vault folder');
@@ -191,6 +195,7 @@ test('native settings rows show examples, vault-folder placeholder and status be
       const rules=element(h.tab.containerEl,'textarea');rules.change('[');await save.click();
       const errors=h.tab.containerEl.descendants().find(el=>el.attributes.id==='sieve-settings-errors');
       assert.equal(errors.parentElement,rules.parentElement.parentElement,'rules diagnostics stay inside the rules setting');
+      assert.ok(errors.classes.has('setting-item-description'),'rule errors inherit native description typography');
       assert.ok(errors.parentElement.children.indexOf(errors)>errors.parentElement.children.indexOf(rules.parentElement),'diagnostics follow the rules control');
       assert.equal(rules.attributes['aria-invalid'],'true');assert.ok(errors.textContent);assert.ok(errors.children.every(el=>el.classes.has('sieve-status-error')));
     }finally{h.tab.hide();h.plugin.onunload();}

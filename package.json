@@ -1,7 +1,7 @@
 {
   "name": "sieve",
-  "version": "0.6.18",
-  "sieveBuild": 31,
+  "version": "0.6.19",
+  "sieveBuild": 32,
   "private": true,
   "description": "Excludes files and folders before vault indexing",
   "type": "module",
