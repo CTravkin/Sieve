@@ -68,7 +68,8 @@ export function installAliases(app:AliasApp,provider:AliasProvider,current:()=>s
     const change=app.workspace.on('layout-change',refresh);cleanup.add(()=>app.workspace.offref!(change));
     const eventDocument=(value:unknown):Document|undefined=>{const doc=(value as {document?:Document}|null)?.document;return doc?.defaultView&&typeof doc.addEventListener==='function'?doc:undefined;};
     const opened=app.workspace.on('window-open',(_workspace,value)=>{const doc=eventDocument(value);if(doc){attach(doc);refresh();}});cleanup.add(()=>app.workspace.offref!(opened));
-    const closed=app.workspace.on('window-close',(_workspace,value)=>{const doc=eventDocument(value);if(doc)documentCleanup.get(doc)?.();});cleanup.add(()=>app.workspace.offref!(closed));
+    // A tracked document can lose its defaultView before the close notification.
+    const closed=app.workspace.on('window-close',(_workspace,value)=>{const doc=(value as {document?:Document}|null)?.document;if(doc)documentCleanup.get(doc)?.();});cleanup.add(()=>app.workspace.offref!(closed));
   }
   refresh();
   return {get capabilities():AliasCapabilities{return Object.freeze({...capabilities,commands:Object.freeze([...capabilities.commands])});},refresh,dispose(){
