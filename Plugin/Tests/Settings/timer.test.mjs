@@ -15,3 +15,16 @@ test('portable timeout fallback still fires and can be cancelled without a DOM',
   const {scheduleTimeout}=await loadRuntime('platform/timer');
   await new Promise(resolve=>scheduleTimeout(resolve,0));let fired=false;const cancel=scheduleTimeout(()=>{fired=true;},0);cancel();await new Promise(resolve=>setTimeout(resolve,10));assert.equal(fired,false);
 });
+
+test('portable cancellation retains its timer provider after the global timer functions change',async()=>{
+  const {scheduleTimeout}=await loadRuntime('platform/timer');
+  const originalStart=globalThis.setTimeout,originalCancel=globalThis.clearTimeout,calls=[];
+  globalThis.setTimeout=(_callback,delay)=>{calls.push(['start',delay]);return 41;};
+  globalThis.clearTimeout=id=>calls.push(['cancel',id]);
+  try{
+    const cancel=scheduleTimeout(()=>{},125);
+    globalThis.clearTimeout=()=>{throw Error('Wrong portable timer provider');};
+    cancel();
+    assert.deepEqual(calls,[['start',125],['cancel',41]]);
+  }finally{globalThis.setTimeout=originalStart;globalThis.clearTimeout=originalCancel;}
+});

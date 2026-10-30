@@ -22,6 +22,8 @@ Filtering uses Obsidian internals. Unsupported runtime structures leave the vaul
 
 Sieve runs locally without network requests or telemetry. On desktop, vault display names read Obsidian's vault registry and Sieve settings in other registered vaults. Included rule files are read from the configured paths, which can be outside the current vault. Writes are limited to Sieve's settings and its single recovery snapshot.
 
+The desktop registry uses only the read-only Electron IPC channels `vault` and `vault-list`; it does not open, remove or modify vaults. The current vault uses its actual `configDir`. Other desktop vaults use their registered configuration override, or Obsidian's standard directory when no override is set. These cross-vault reads account for the directory review's IPC and configuration-path warnings.
+
 ## Operations
 
 ### Installation
@@ -89,6 +91,8 @@ npm run test:package
 ```
 
 The native matcher comparison requires Go 1.27.0. Tests use owned temporary directories and clean them after the run. `SIEVE_TEST_TEMP` selects their parent directory; `SIEVE_ORACLE_BINARY` supplies a prebuilt native oracle. Automated checks do not replace testing in Obsidian or on mobile devices.
+
+Lint permits the two documented cross-vault configuration-path warnings and fails if the warning count grows.
 
 ## Branches
 

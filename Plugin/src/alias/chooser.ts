@@ -7,7 +7,7 @@ import type {AliasApp,AliasProvider,AliasSnapshot,VaultLabel} from './contracts.
 
 interface Chooser {app:unknown;items:VaultLabel[];loadVaults:NativeFunction;getItemText:NativeFunction;updateSuggestions:NativeFunction;onChooseItem:NativeFunction;close:NativeFunction}
 export interface ChooserSdk {FuzzySuggestModal?:{prototype:{open?:NativeFunction}}}
-interface Options {sdk:ChooserSdk;timeoutMs?:number;alive():boolean;epoch():number;cleanup:Set<()=>void>}
+interface Options {sdk:ChooserSdk;timeoutMs?:number;alive:()=>boolean;epoch:()=>number;cleanup:Set<()=>void>}
 let capturing=false;
 
 function chooser(value:unknown,app:AliasApp):value is Chooser {

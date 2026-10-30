@@ -33,7 +33,7 @@ function decode(s: string, index = 0): [number, number] {
     if ((b & 0xc0) !== 0x80) return [0xfffd, 1];
     cp = (cp << 6) | (b & 0x3f);
   }
-  if (cp < [0,0,0x80,0x800,0x10000][width]! || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) return [0xfffd, 1];
+  if (cp < [0,0,0x80,0x800,0x10000][width] || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) return [0xfffd, 1];
   return [cp, width];
 }
 
@@ -118,7 +118,7 @@ function matches(m: Glob, s: string): boolean {
         const left = s.slice(0, offset + i);
         if (m.left ? matches(m.left, left) : left === '') {
           for (let j = segments.length - 1; j >= 0; j--) {
-            const right = s.slice(Math.min(s.length, offset + i + segments[j]!));
+            const right = s.slice(Math.min(s.length, offset + i + segments[j]));
             if (m.right ? matches(m.right, right) : right === '') return true;
           }
         }
@@ -151,7 +151,7 @@ function find(m: Glob, s: string): Index {
       const segments = runeEnds(s).slice(m.limit! - 1);
       return segments.length ? [0, segments] : none();
     }
-    case 'max': return [0, [0, ...runeEnds(s).slice(0, m.limit!)]];
+    case 'max': return [0, [0, ...runeEnds(s).slice(0, m.limit)]];
     case 'contains': {
       const i = s.indexOf(m.text!); let offset = 0;
       if (!m.not) {
@@ -215,7 +215,7 @@ function find(m: Glob, s: string): Index {
     case 'every': {
       let index = 0; let offset = 0; let sub = s; let current: number[] = [];
       for (let i = 0; i < children.length; i++) {
-        const [idx, segments] = find(children[i]!, sub);
+        const [idx, segments] = find(children[i], sub);
         if (idx === -1) return none();
         if (!i) current = segments;
         else {
@@ -233,8 +233,8 @@ function find(m: Glob, s: string): Index {
 }
 
 function optimizeOne(m: Glob, l = m.left, r = m.right): Glob {
-  if (m.kind === 'anyof' && m.children!.length === 1) return m.children![0]!;
-  if (m.kind === 'list' && !m.not && m.list!.length === 1) return text(encode(String.fromCodePoint(m.list![0]!)));
+  if (m.kind === 'anyof' && m.children!.length === 1) return m.children![0];
+  if (m.kind === 'list' && !m.not && m.list!.length === 1) return text(encode(String.fromCodePoint(m.list![0])));
   if (m.kind !== 'btree') return m;
   m = { ...m, left: l, right: r };
   if (m.value!.kind !== 'text') return m;
@@ -315,17 +315,17 @@ function minimize(ms: Glob[]): Glob[] {
   const keys = ms.map(primitiveSeparatorKey);
   const keyEnds = new Uint32Array(n);
   const lengths = new Float64Array(n+1);
-  for (let i=0;i<n;i++) lengths[i+1]=lengths[i]!+ms[i]!.len;
-  for (let i=n-1;i>=0;i--) keyEnds[i]=keys[i] !== undefined && keys[i]===keys[i+1] ? keyEnds[i+1]! : i+1;
+  for (let i=0;i<n;i++) lengths[i+1]=lengths[i]+ms[i].len;
+  for (let i=n-1;i>=0;i--) keyEnds[i]=keys[i] !== undefined && keys[i]===keys[i+1] ? keyEnds[i+1] : i+1;
   const entries = (kind: 1 | 2): (Group | undefined)[] => kind===1 ? rows : primitives;
   const add = (kind: 1 | 2, start: number, end: number): void => {
     if (end-start<2) return;
-    const len=kind===2 || (keys[start] !== undefined && keyEnds[start]! >= end) ? -1 : lengths[end]!-lengths[start]!;
+    const len=kind===2 || (keys[start] !== undefined && keyEnds[start] >= end) ? -1 : lengths[end]-lengths[start];
     entries(kind)[start]={start,end,len,kind};
   };
   let rowStart=-1; let primitiveStart=-1; let previousKey: string | undefined;
   for (let i=0;i<=n;i++) {
-    if (ms[i]?.len === undefined || ms[i]!.len===-1) { if(rowStart!==-1) add(1,rowStart,i); rowStart=-1; }
+    if (ms[i]?.len === undefined || ms[i].len===-1) { if(rowStart!==-1) add(1,rowStart,i); rowStart=-1; }
     else if(rowStart===-1) rowStart=i;
     const key=keys[i];
     if(key===undefined || key!==previousKey) { if(primitiveStart!==-1) add(2,primitiveStart,i); primitiveStart=key===undefined?-1:i; }
@@ -347,26 +347,26 @@ function minimize(ms: Glob[]): Glob[] {
   };
   const assemble = (): Glob[] => {
     const result: Glob[]=[];
-    for(let i=0;i<n;) { const replacement=replacements.get(i); if(replacement) { result.push(replacement.value); i=replacement.end; } else result.push(ms[i++]!); }
+    for(let i=0;i<n;) { const replacement=replacements.get(i); if(replacement) { result.push(replacement.value); i=replacement.end; } else result.push(ms[i++]); }
     return result;
   };
   const groups: Group[]=[];
   for(let i=0;i<n;i++) groups.push(...[rows[i],primitives[i]].filter((g): g is Group => g!==undefined).sort((a,b)=>b.end-a.end));
   let firstConflict=groups.length; let lastConflict=-1; let widest=-1;
   for(let i=0;i<groups.length;i++) {
-    if(widest!==-1 && groups[widest]!.end>groups[i]!.start) { firstConflict=Math.min(firstConflict,widest); lastConflict=i; }
-    if(widest===-1 || groups[i]!.end>groups[widest]!.end) widest=i;
+    if(widest!==-1 && groups[widest].end>groups[i].start) { firstConflict=Math.min(firstConflict,widest); lastConflict=i; }
+    if(widest===-1 || groups[i].end>groups[widest].end) widest=i;
   }
   if(lastConflict===-1) { for(const g of groups) collapse(g); return assemble(); }
   // An independent suffix can only defer the winner from the preceding
   // intervals; it cannot change which preceding interval wins. Its collapses
   // commute, so perform them together. An independent prefix can also batch
   // when every possible prefix winner prevents every later replacement.
-  for(let i=lastConflict+1;i<groups.length;i++) collapse(groups[i]!);
+  for(let i=lastConflict+1;i<groups.length;i++) collapse(groups[i]);
   let minSize=Infinity; let minFixedLen=Infinity; let maxSize=0; let maxFixedLen=-1;
-  for(let i=0;i<firstConflict;i++) { const g=groups[i]!; minSize=Math.min(minSize,g.end-g.start); if(g.len>=0) minFixedLen=Math.min(minFixedLen,g.len); }
-  for(let i=firstConflict;i<=lastConflict;i++) { const g=groups[i]!; maxSize=Math.max(maxSize,g.end-g.start); maxFixedLen=Math.max(maxFixedLen,g.len); }
-  if(minSize>=maxSize && minFixedLen>=maxFixedLen) for(let i=0;i<firstConflict;i++) collapse(groups[i]!);
+  for(let i=0;i<firstConflict;i++) { const g=groups[i]; minSize=Math.min(minSize,g.end-g.start); if(g.len>=0) minFixedLen=Math.min(minFixedLen,g.len); }
+  for(let i=firstConflict;i<=lastConflict;i++) { const g=groups[i]; maxSize=Math.max(maxSize,g.end-g.start); maxFixedLen=Math.max(maxFixedLen,g.len); }
+  if(minSize>=maxSize && minFixedLen>=maxFixedLen) for(let i=0;i<firstConflict;i++) collapse(groups[i]);
 
   // The native replacement predicate is not a total ordering. This index
   // skips only intervals where no candidate can replace the current choice;
@@ -381,13 +381,13 @@ function minimize(ms: Glob[]): Glob[] {
     sizes[slot]=Math.max(row?row.end-row.start:0,primitive?primitive.end-primitive.start:0);
     lens[slot]=Math.max(row?.len??-1,primitive?.len??-1);
   };
-  const branch = (i: number): void => { masks[i]=masks[i*2]!|masks[i*2+1]!; sizes[i]=Math.max(sizes[i*2]!,sizes[i*2+1]!); lens[i]=Math.max(lens[i*2]!,lens[i*2+1]!); };
+  const branch = (i: number): void => { masks[i]=masks[i*2]|masks[i*2+1]; sizes[i]=Math.max(sizes[i*2],sizes[i*2+1]); lens[i]=Math.max(lens[i*2],lens[i*2+1]); };
   for(let i=0;i<n;i++) leaf(i);
   for(let i=width-1;i>0;i--) branch(i);
   const refresh = (i: number): void => { leaf(i); for(let parent=(width+i)>>1;parent>0;parent>>=1) branch(parent); };
   const first = (from: number, to=n, mask=3, size=0, len=-1): number => {
     const search = (node: number, left: number, right: number): number => {
-      if(right<=from || left>=to || !(masks[node]!&mask) || !(sizes[node]!>size || (len>=0 && lens[node]!>len))) return -1;
+      if(right<=from || left>=to || !(masks[node]&mask) || !(sizes[node]>size || (len>=0 && lens[node]>len))) return -1;
       if(right-left===1) return left;
       const middle=(left+right)>>1;
       const found=search(node*2,left,middle);
@@ -397,7 +397,7 @@ function minimize(ms: Glob[]): Glob[] {
   };
   const last = (to: number, mask: number): number => {
     const search = (node: number, left: number, right: number): number => {
-      if(left>=to || !(masks[node]!&mask)) return -1;
+      if(left>=to || !(masks[node]&mask)) return -1;
       if(right-left===1) return left;
       const middle=(left+right)>>1;
       const found=search(node*2+1,middle,right);
@@ -436,7 +436,7 @@ function minimize(ms: Glob[]): Glob[] {
 }
 
 function compileSequence(ms: Glob[]): Glob {
-  if (ms.length === 1) return ms[0]!;
+  if (ms.length === 1) return ms[0];
   const glued = glue(ms); if (glued) return glued;
   // Cartesian tree of the native pivot priority: rightmost longest fixed
   // matcher, otherwise first variable matcher. Build and optimize iteratively
@@ -447,34 +447,34 @@ function compileSequence(ms: Glob[]): Glob {
   const variables=new Uint32Array(n+1); const everyEnd=new Uint32Array(n);
   const keys=ms.map(primitiveSeparatorKey);
   const stack: number[]=[];
-  const higher=(a:number,b:number):boolean => ms[a]!.len !== ms[b]!.len ? ms[a]!.len > ms[b]!.len : ms[a]!.len >= 0 ? a>b : a<b;
+  const higher=(a:number,b:number):boolean => ms[a].len !== ms[b].len ? ms[a].len > ms[b].len : ms[a].len >= 0 ? a>b : a<b;
   for (let i=0;i<n;i++) {
-    variables[i+1]=variables[i]!+(ms[i]!.len===-1?1:0);
+    variables[i+1]=variables[i]+(ms[i].len===-1?1:0);
     let last=-1;
-    while(stack.length && higher(i,stack[stack.length-1]!)) last=stack.pop()!;
+    while(stack.length && higher(i,stack[stack.length-1])) last=stack.pop()!;
     lefts[i]=last;
-    if(stack.length) rights[stack[stack.length-1]!]=i;
+    if(stack.length) rights[stack[stack.length-1]]=i;
     stack.push(i);
   }
-  for(let i=n-1;i>=0;i--) everyEnd[i]=keys[i] !== undefined && keys[i]===keys[i+1] ? everyEnd[i+1]! : i+1;
-  const root=stack[0]!;
+  for(let i=n-1;i>=0;i--) everyEnd[i]=keys[i] !== undefined && keys[i]===keys[i+1] ? everyEnd[i+1] : i+1;
+  const root=stack[0];
   const order: [number,boolean][]=[[root,false]];
   while(order.length) {
     const [i,ready]=order.pop()!;
-    if(ready) { starts[i]=lefts[i]===-1?i:starts[lefts[i]!]!; ends[i]=rights[i]===-1?i+1:ends[rights[i]!]!; }
-    else { order.push([i,true]); if(lefts[i]!==-1) order.push([lefts[i]!,false]); if(rights[i]!==-1) order.push([rights[i]!,false]); }
+    if(ready) { starts[i]=lefts[i]===-1?i:starts[lefts[i]]; ends[i]=rights[i]===-1?i+1:ends[rights[i]]; }
+    else { order.push([i,true]); if(lefts[i]!==-1) order.push([lefts[i],false]); if(rights[i]!==-1) order.push([rights[i],false]); }
   }
   const results=new Map<number,Glob>();
   order.push([root,false]);
   while(order.length) {
     const [i,ready]=order.pop()!;
-    const start=starts[i]!; const end=ends[i]!;
-    if(end-start===1) { results.set(i,ms[i]!); continue; }
-    if (variables[end]! === variables[start]! || (keys[start] !== undefined && everyEnd[start]! >= end)) {
+    const start=starts[i]; const end=ends[i];
+    if(end-start===1) { results.set(i,ms[i]); continue; }
+    if (variables[end] === variables[start] || (keys[start] !== undefined && everyEnd[start] >= end)) {
       results.set(i,glue(ms.slice(start,end))!); continue;
     }
-    if(!ready) { order.push([i,true]); if(lefts[i]!==-1) order.push([lefts[i]!,false]); if(rights[i]!==-1) order.push([rights[i]!,false]); continue; }
-    const left=results.get(lefts[i]!); const right=results.get(rights[i]!); const value=ms[i]!;
+    if(!ready) { order.push([i,true]); if(lefts[i]!==-1) order.push([lefts[i],false]); if(rights[i]!==-1) order.push([rights[i],false]); continue; }
+    const left=results.get(lefts[i]); const right=results.get(rights[i]); const value=ms[i];
     const lens=[value.len,left?.len??0,right?.len??0];
     results.set(i,make('btree',lens.includes(-1)?-1:lens.reduce((a,b)=>a+b,0),{value,left,right}));
   }
@@ -490,7 +490,7 @@ function simplifyAlternatives(node: Node): Node | undefined {
     while (pending.length) {
       const [x,y] = pending.pop()!;
       if (x.kind !== y.kind || x.text !== y.text || x.lo !== y.lo || x.hi !== y.hi || x.not !== y.not || (x.children?.length ?? 0) !== (y.children?.length ?? 0)) return false;
-      for (let i = 0; i < (x.children?.length ?? 0); i++) pending.push([x.children![i]!,y.children![i]!]);
+      for (let i = 0; i < (x.children?.length ?? 0); i++) pending.push([x.children![i],y.children![i]]);
     }
     return true;
   };
@@ -500,12 +500,12 @@ function simplifyAlternatives(node: Node): Node | undefined {
   for (let i = 0, j = least.length-1; total < least.length && j >= 0 && !(breakLeft && breakRight); i++, j--) {
     for (const choice of choices) {
       if (choice.children === least) continue;
-      breakLeft ||= !same(least[i]!,choice.children![i]!);
+      breakLeft ||= !same(least[i],choice.children![i]);
       breakRight ||= !breakLeft && j <= i;
-      breakRight ||= !same(least[j]!,choice.children![j+choice.children!.length-least.length]!);
+      breakRight ||= !same(least[j],choice.children![j+choice.children!.length-least.length]);
     }
-    if (!breakLeft) { total++; commonLeft.push(least[i]!); }
-    if (!breakRight) { total++; commonRight.unshift(least[j]!); }
+    if (!breakLeft) { total++; commonLeft.push(least[i]); }
+    if (!breakRight) { total++; commonRight.unshift(least[j]); }
   }
   const left = commonLeft.length; const right = commonRight.length;
   if (!left && !right) return undefined;
@@ -517,7 +517,7 @@ function simplifyAlternatives(node: Node): Node | undefined {
     const next: Node = middle.length ? { kind:'pattern', children:middle } : { kind:'nothing' };
     if (!alternatives.some(a => same(a,next))) alternatives.push(next);
   }
-  if (alternatives.length === 1 && alternatives[0]!.kind !== 'nothing') common.push(alternatives[0]!);
+  if (alternatives.length === 1 && alternatives[0].kind !== 'nothing') common.push(alternatives[0]);
   else if (alternatives.length > 1) common.push({ kind:'anyof', children:alternatives });
   if (right) common.push({ kind:'pattern', children:commonRight });
   return { kind:'pattern', children:common };
@@ -564,19 +564,19 @@ function compile(root: Node): Glob {
 }
 
 function parse(pattern: string): Node {
-  const source = Array.from(pattern.split('\0',1)[0]!);
+  const source = Array.from(pattern.split('\0',1)[0]);
   if (source.some(r => r === '\ufffd' || (r.codePointAt(0)! >= 0xd800 && r.codePointAt(0)! <= 0xdfff))) throw new Error('could not read rune');
   const root: Node = { kind:'pattern', children:[] };
   let current = root; const stack: { parent: Node; choices: Node }[] = [];
   let pos = 0;
   while (pos < source.length) {
-    const r = source[pos++]!;
+    const r = source[pos++];
     if (r === '{') {
       const choices: Node = { kind:'anyof', children:[] };
       current.children!.push(choices); stack.push({ parent:current, choices });
       current = { kind:'pattern', children:[] }; choices.children!.push(current);
     } else if (stack.length && r === ',') {
-      current = { kind:'pattern', children:[] }; stack[stack.length-1]!.choices.children!.push(current);
+      current = { kind:'pattern', children:[] }; stack[stack.length-1].choices.children!.push(current);
     } else if (stack.length && r === '}') {
       current = stack.pop()!.parent;
     } else if (r === '*') {
@@ -595,7 +595,7 @@ function parse(pattern: string): Node {
       } else {
         let chars = ''; let closed = false;
         while (pos < source.length) {
-          let c = source[pos++]!;
+          let c = source[pos++];
           if (c === ']') { closed = true; break; }
           if (c === '\\') { if (pos === source.length) break; c = source[pos++]!; }
           chars += c;
@@ -607,7 +607,7 @@ function parse(pattern: string): Node {
     } else {
       pos--; let literal = '';
       while (pos < source.length) {
-        let c = source[pos]!;
+        let c = source[pos];
         if ('?*[{'.includes(c) || (stack.length && ',}'.includes(c))) break;
         pos++;
         if (c === '\\') { if (pos === source.length) break; c = source[pos++]!; }
