@@ -14,7 +14,7 @@ export function desktopIncludeReader(adapter:PrivateAdapter):(path:string)=>Prom
 
 /** Native desktop modules are resolved only inside this lazy desktop provider. */
 export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefined,configDir:string):AliasProvider {
-  type DesktopIpc={sendSync:(channel:string)=>unknown};
+  type DesktopIpc={sendSync:(channel:'vault'|'vault-list')=>unknown};
   type NativePath={basename:(value:string)=>string;join:(...parts:string[])=>string};
   type DesktopHost={require?:(name:string)=>unknown;electron?:{ipcRenderer?:DesktopIpc};localStorage?:Storage};
   const host=typeof window==='object'?window as unknown as DesktopHost:undefined;
@@ -36,7 +36,8 @@ export function desktopAliasProvider(adapter:PrivateAdapter,appId:string|undefin
     return {vaults,validate(){return sameVaults(registry(),vaults);},async read(vault){
       const entry=vault.id?byId.get(vault.id):byPath.get(vault.path);
       if(!entry || entry.path!==vault.path || !adapter.fsPromises || typeof adapter.fsPromises.readFile!=='function')throw Error('Alias read unavailable');
-      // Other vaults store overrides by ID; absent overrides use Obsidian's default.
+      // Other vaults store overrides by ID. Their absent override means the native
+      // default, never this vault's potentially different configDir.
       const override=entry.isCurrentVault?configDir:host?.localStorage?.getItem(entry.id+'-config')||'.obsidian';
       if(typeof override!=='string' || !override || /^(?:[a-z]:|[\\/])/i.test(override) || override.split(/[\\/]/).some(part=>part==='..' || part==='.' || !part))throw Error('Alias config unavailable');
       const path=host?.require?.('path') as Partial<NativePath>|undefined;if(typeof path?.join!=='function')throw Error('Alias read unavailable');

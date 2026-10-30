@@ -8,7 +8,7 @@ import type {AliasProvider,AliasSnapshot,VaultLabel} from './contracts.ts';
 interface MenuEntry {titleEl?:{textContent:string|null};setTitle?:(title:string)=>unknown}
 interface NativeMenu {items?:MenuEntry[];hide?:NativeFunction}
 export interface DrawerSdk {Menu?:{forEvent?:(event:MouseEvent)=>NativeMenu}}
-interface Options {sdk:DrawerSdk;timeoutMs?:number;alive():boolean;attached(document:Document):boolean}
+interface Options {sdk:DrawerSdk;timeoutMs?:number;alive:()=>boolean;attached:(document:Document)=>boolean}
 
 export function installDrawerAliases(provider:AliasProvider,current:()=>string,options:Options) {
   const {sdk,alive,attached}=options;
@@ -29,12 +29,12 @@ export function installDrawerAliases(provider:AliasProvider,current:()=>string,o
         if(dispatched || !alive() || !attached(doc) || request!==clickRequest || !target.isConnected)return;
         const Mouse=doc.defaultView?.MouseEvent;if(!Mouse)return;
         const next=new Mouse('click',{bubbles:true,cancelable:true,view:doc.defaultView,button:original.button,buttons:original.buttons,clientX:original.clientX,clientY:original.clientY,screenX:original.screenX,screenY:original.screenY,ctrlKey:original.ctrlKey,altKey:original.altKey,shiftKey:original.shiftKey,metaKey:original.metaKey,detail:original.detail});
-        replay.set(next,names?{vaults:vaults!,names:names.map((name,index)=>vaults![index].isCurrentVault?displayName(vaults![index].name,current()):name)}:undefined);dispatched=true;target.dispatchEvent(next);
+        replay.set(next,names?{vaults:vaults,names:names.map((name,index)=>vaults[index].isCurrentVault?displayName(vaults[index].name,current()):name)}:undefined);dispatched=true;target.dispatchEvent(next);
       };
       void resolveNames(vaults,source??provider,current(),options.timeoutMs,()=>!alive() || !attached(doc) || request!==clickRequest || !target.isConnected).then(names=>{
         if(!alive() || !attached(doc) || request!==clickRequest || !target.isConnected)return;
         // A stale/failed registry check restores the native action, without cached aliases.
-        const valid=source?source.validate():sameVaults(provider.list!(),vaults!);
+        const valid=source?source.validate():sameVaults(provider.list!(),vaults);
         dispatch(valid?names:undefined);
       }).catch(()=>dispatch());
     };

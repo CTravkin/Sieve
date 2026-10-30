@@ -82,13 +82,13 @@ export class SieveSettingsTab extends PluginSettingTab {
       this.rules=input;input.setValue(this.draft.rules).setDisabled(this.saving).onChange(value=>this.edit({...this.draft,rules:value}));
       input.setPlaceholder(text.rulesPlaceholder);
       input.inputEl.setAttr('aria-label',text.rulesLabel);input.inputEl.setAttr('aria-describedby','sieve-rules-description sieve-settings-errors');input.inputEl.setAttr('spellcheck','false');input.inputEl.rows=12;input.inputEl.wrap='off';
-      input.inputEl.addEventListener('focus',()=>input.setPlaceholder(''));
+      input.inputEl.addEventListener('focus',()=>{input.setPlaceholder('');});
       input.inputEl.addEventListener('blur',event=>{
         input.setPlaceholder(text.rulesPlaceholder);
         // A native button click follows blur. Let Save validate authoritatively
         // instead of disabling the button before that first click can arrive.
         if(event.relatedTarget===this.saveButton?.buttonEl)return;
-        return this.validateRules();
+        void this.validateRules();
       });
     });
     this.errorsEl=rulesSetting.settingEl.createDiv({cls:'setting-item-description sieve-rule-errors',attr:{id:'sieve-settings-errors',role:'alert','aria-live':'assertive'}});

@@ -58,7 +58,7 @@ export async function parseRules(text: string, context: CompileContext): Promise
     let escapeSeen = false; let ownPatterns = false;
     for (let index = 0; index < lines.length; index++) {
       const lineNumber = index + 1;
-      const raw = lines[index]!;
+      const raw = lines[index];
       let line = trimSpace(raw.text);
       if (line.startsWith('#escape')) {
         if (escapeSeen) fail(source, lineNumber, 'escape', 'mutiple #escape= lines found in ignore file');

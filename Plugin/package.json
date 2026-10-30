@@ -1,7 +1,7 @@
 {
   "name": "sieve",
-  "version": "1.0.2",
-  "sieveBuild": 37,
+  "version": "1.0.4",
+  "sieveBuild": 39,
   "private": true,
   "description": "Excludes files and folders before vault indexing.",
   "type": "module",
@@ -11,7 +11,7 @@
   },
   "scripts": {
     "check": "node scripts/check-project.mjs",
-    "lint": "cd .. && eslint --config Plugin/eslint.config.mjs Plugin/src",
+    "lint": "cd .. && eslint --config Plugin/eslint.config.mjs Plugin/src --max-warnings 2",
     "test": "node scripts/run-tests.mjs Tests/*.test.mjs",
     "build:core": "node scripts/build-core.mjs",
     "typecheck": "tsc --noEmit",

@@ -6,6 +6,10 @@ import {fakeHost} from '../Fixtures/host-adapter.mjs';
 import {uiSdk,element,resetUi} from '../Fixtures/ui-host.mjs';
 const {default:SievePlugin}=await loadRuntime('main',uiSdk);
 
+// Native DOM ignores a listener's return value. Drain the in-memory validation
+// microtasks instead of relying on a Promise returned by the blur listener.
+async function blur(input,relatedTarget=null){await input.blur(relatedTarget);await new Promise(resolve=>setImmediate(resolve));}
+
 test('search definitions expose both editable fields without saving or starting a UI session',async()=>{
   const h=await setup();try{
     h.tab.hide();const writes=h.writes.length;
@@ -14,7 +18,7 @@ test('search definitions expose both editable fields without saving or starting 
     assert.deepEqual(definitions.map(item=>item.name),['Filter rules','Syntax','Vault display name','Status']);
     assert.ok(definitions.every(item=>typeof item.render==='function'&&!item.control),'custom renders preserve explicit Save');
     assert.equal(h.writes.length,writes);
-    h.tab.display();element(h.tab.containerEl,'textarea').change('New rules');await element(h.tab.containerEl,'textarea').blur();
+    h.tab.display();element(h.tab.containerEl,'textarea').change('New rules');await blur(element(h.tab.containerEl,'textarea'));
     assert.equal(h.writes.length,writes);await element(h.tab.containerEl,'button','Save').click();assert.equal(h.plugin.savedSettings.rules,'New rules');
   }finally{h.tab.hide();h.plugin.onunload();}
 });
@@ -253,7 +257,7 @@ test('native heading keeps its title and icon in a separate settings window in b
 test('rules placeholder disappears on focus and restores on blur without inserting sample rules',async()=>{
   const h=await setup({rule:''});try{
     const rules=element(h.tab.containerEl,'textarea');assert.equal(rules.value,'');assert.equal(rules.placeholder,'*.tmp\n/build\n**/cache');
-    await rules.focus();assert.equal(rules.placeholder,'');await rules.blur();assert.equal(rules.placeholder,'*.tmp\n/build\n**/cache');assert.equal(rules.value,'');assert.equal(h.writes.length,0);
+    await rules.focus();assert.equal(rules.placeholder,'');await blur(rules);assert.equal(rules.placeholder,'*.tmp\n/build\n**/cache');assert.equal(rules.value,'');assert.equal(h.writes.length,0);
   }finally{h.tab.hide();h.plugin.onunload();}
 });
 
@@ -262,7 +266,7 @@ test('Save follows dirty values, blur validates without writing, and edits clear
     const rules=element(h.tab.containerEl,'textarea'),save=element(h.tab.containerEl,'button','Save');
     assert.equal(save.disabled,true);rules.change('[');assert.equal(save.disabled,false);assert.equal(rules.attributes['aria-invalid'],'false');
     await new Promise(resolve=>setTimeout(resolve,10));assert.equal(rules.attributes['aria-invalid'],'false','typing must not trigger validation');
-    await rules.blur();assert.equal(rules.attributes['aria-invalid'],'true');assert.equal(save.disabled,true);assert.equal(h.writes.length,0);assert.equal(h.plugin.savedSettings.rules,'Technical');assert.equal(h.plugin.activeSettings.rules,'Technical');
+    await blur(rules);assert.equal(rules.attributes['aria-invalid'],'true');assert.equal(save.disabled,true);assert.equal(h.writes.length,0);assert.equal(h.plugin.savedSettings.rules,'Technical');assert.equal(h.plugin.activeSettings.rules,'Technical');
     rules.change('Other');assert.equal(rules.attributes['aria-invalid'],'false');assert.equal(save.disabled,false);assert.doesNotMatch(h.tab.containerEl.textContent,/Line 1: Invalid pattern/);
     rules.change('Technical');assert.equal(save.disabled,true);element(h.tab.containerEl,'input').change('New name');assert.equal(save.disabled,false);await save.click();assert.equal(save.disabled,true);assert.equal(h.plugin.savedSettings.displayName,'New name');
   }finally{h.tab.hide();h.plugin.onunload();}
@@ -271,16 +275,16 @@ test('Save follows dirty values, blur validates without writing, and edits clear
 test('blur toward Save lets the first native click perform authoritative validation',async()=>{
   const h=await setup();try{
     const rules=element(h.tab.containerEl,'textarea'),save=element(h.tab.containerEl,'button','Save');let checks=0;const validate=h.plugin.validateSettings.bind(h.plugin);h.plugin.validateSettings=(...args)=>{checks++;return validate(...args);};
-    rules.change('[');await rules.blur(save);assert.equal(checks,0);assert.equal(save.disabled,false);await save.click();assert.equal(save.disabled,true);assert.equal(rules.attributes['aria-invalid'],'true');assert.equal(h.writes.length,0);
+    rules.change('[');await blur(rules,save);assert.equal(checks,0);assert.equal(save.disabled,false);await save.click();assert.equal(save.disabled,true);assert.equal(rules.attributes['aria-invalid'],'true');assert.equal(h.writes.length,0);
   }finally{h.tab.hide();h.plugin.onunload();}
 });
 
 test('stale blur results cannot invalidate a newer edit or a reopened settings session',async()=>{
   const h=await setup();try{
     const validate=h.plugin.validateSettings.bind(h.plugin);let release;h.plugin.validateSettings=()=>new Promise(resolve=>{release=resolve;});
-    let rules=element(h.tab.containerEl,'textarea');rules.change('[');const validating=rules.blur();rules.change('Latest');release({ok:false,error:{code:'rules'}});await validating;
+    let rules=element(h.tab.containerEl,'textarea');rules.change('[');const validating=blur(rules);rules.change('Latest');release({ok:false,error:{code:'rules'}});await validating;
     assert.equal(rules.attributes['aria-invalid'],'false');assert.equal(element(h.tab.containerEl,'button','Save').disabled,false);assert.doesNotMatch(h.tab.containerEl.textContent,/Could not validate/);
-    const closedValidation=rules.blur();h.tab.hide();h.tab.display();release({ok:false,error:{code:'rules'}});await closedValidation;
+    const closedValidation=blur(rules);h.tab.hide();h.tab.display();release({ok:false,error:{code:'rules'}});await closedValidation;
     rules=element(h.tab.containerEl,'textarea');assert.equal(rules.value,'Technical');assert.equal(rules.attributes['aria-invalid'],'false');assert.equal(element(h.tab.containerEl,'button','Save').disabled,true);assert.equal(h.writes.length,0);h.plugin.validateSettings=validate;
   }finally{h.tab.hide();h.plugin.onunload();}
 });
@@ -317,14 +321,14 @@ test('a corrected included file clears failed-Save diagnostics on blur without c
   const h=await setup();try{
     const rules=element(h.tab.containerEl,'textarea'),save=element(h.tab.containerEl,'button','Save');h.physical.set('rules',{type:'file',content:new TextEncoder().encode('[')});
     rules.change('#include rules');await save.click();assert.equal(save.disabled,true);assert.equal(rules.attributes['aria-invalid'],'true');assert.equal(h.writes.length,0);
-    h.physical.set('rules',{type:'file',content:new TextEncoder().encode('Technical')});await rules.blur();assert.equal(save.disabled,false);assert.equal(rules.attributes['aria-invalid'],'false');assert.equal(h.writes.length,0);await save.click();assert.equal(h.plugin.savedSettings.rules,'#include rules');
+    h.physical.set('rules',{type:'file',content:new TextEncoder().encode('Technical')});await blur(rules);assert.equal(save.disabled,false);assert.equal(rules.attributes['aria-invalid'],'false');assert.equal(h.writes.length,0);await save.click();assert.equal(h.plugin.savedSettings.rules,'#include rules');
   }finally{h.tab.hide();h.plugin.onunload();}
 });
 
 test('timeout on blur or Save leaves the same draft retryable',async()=>{
   const h=await setup();try{
     const rules=element(h.tab.containerEl,'textarea'),save=element(h.tab.containerEl,'button','Save');rules.change('Other');
-    const validate=h.plugin.validateSettings.bind(h.plugin);h.plugin.validateSettings=async()=>({ok:false,error:{code:'timeout'}});await rules.blur();assert.equal(save.disabled,false);assert.match(h.tab.containerEl.textContent,/timed out/);assert.equal(h.writes.length,0);h.plugin.validateSettings=validate;
+    const validate=h.plugin.validateSettings.bind(h.plugin);h.plugin.validateSettings=async()=>({ok:false,error:{code:'timeout'}});await blur(rules);assert.equal(save.disabled,false);assert.match(h.tab.containerEl.textContent,/timed out/);assert.equal(h.writes.length,0);h.plugin.validateSettings=validate;
     const persist=h.plugin.saveSettings.bind(h.plugin);h.plugin.saveSettings=async()=>({ok:false,error:{code:'timeout'}});await save.click();assert.equal(save.disabled,false);h.plugin.saveSettings=persist;await save.click();assert.equal(save.disabled,true);assert.equal(h.plugin.savedSettings.rules,'Other');
   }finally{h.tab.hide();h.plugin.onunload();}
 });

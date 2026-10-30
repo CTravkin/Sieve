@@ -10,7 +10,7 @@ export function nativeNormalize(text: string, platform: Platform): string {
   const append = (rune: number): void => {
     const ccc = combiningClass(rune); let index = decomposed.length;
     // Stable canonical ordering, bounded by native stream-safe segment length.
-    if (ccc) while (index > 0 && combiningClass(decomposed[index-1]!) > ccc) index--;
+    if (ccc) while (index > 0 && combiningClass(decomposed[index-1]) > ccc) index--;
     decomposed.splice(index,0,rune);
   };
   for (const char of text) {
@@ -32,7 +32,7 @@ export function nativeNormalize(text: string, platform: Platform): string {
     const ccc = combiningClass(rune);
     let combined: number | undefined;
     if (starter !== -1 && (lastClass < ccc || lastClass === 0)) {
-      const first = composed[starter]!;
+      const first = composed[starter];
       const l = first - 0x1100; const v = rune - 0x1161;
       if (l >= 0 && l < 19 && v >= 0 && v < 21) combined = 0xac00 + (l*21+v)*28;
       else if (first >= 0xac00 && first <= 0xd7a3 && (first-0xac00)%28 === 0 && rune > 0x11a7 && rune < 0x11c3) combined = first + rune - 0x11a7;
@@ -113,12 +113,12 @@ export function relativePath(root: string, path: string): string {
 function decodeGoUTF8(bytes: Uint8Array): string {
   let result = '';
   for (let i = 0; i < bytes.length;) {
-    const first = bytes[i]!;
+    const first = bytes[i];
     if (first < 0x80) { result += String.fromCharCode(first); i++; continue; }
     const width = first >= 0xc2 && first <= 0xdf ? 2 : first >= 0xe0 && first <= 0xef ? 3 : first >= 0xf0 && first <= 0xf4 ? 4 : 0;
     let cp = first & (0x7f >> width); let valid = width > 0 && i + width <= bytes.length;
-    for (let j = 1; valid && j < width; j++) { const b = bytes[i+j]!; if ((b & 0xc0) !== 0x80) valid = false; else cp = (cp << 6) | (b & 0x3f); }
-    if (cp < [0,0,0x80,0x800,0x10000][width]! || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) valid = false;
+    for (let j = 1; valid && j < width; j++) { const b = bytes[i+j]; if ((b & 0xc0) !== 0x80) valid = false; else cp = (cp << 6) | (b & 0x3f); }
+    if (cp < [0,0,0x80,0x800,0x10000][width] || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) valid = false;
     if (valid) { result += String.fromCodePoint(cp); i += width; }
     else { result += String.fromCharCode(0xdc00 + first); i++; }
   }
@@ -161,17 +161,17 @@ export function sha256(content: string | Uint8Array): string {
   for (let offset = 0; offset < bytes.length; offset += 64) {
     for (let i = 0; i < 16; i++) w[i] = view.getUint32(offset + i * 4);
     for (let i = 16; i < 64; i++) {
-      const a = w[i - 15]!; const b = w[i - 2]!;
-      w[i] = (w[i - 16]! + (rotate(a, 7) ^ rotate(a, 18) ^ (a >>> 3)) + w[i - 7]! + (rotate(b, 17) ^ rotate(b, 19) ^ (b >>> 10))) >>> 0;
+      const a = w[i - 15]; const b = w[i - 2];
+      w[i] = (w[i - 16] + (rotate(a, 7) ^ rotate(a, 18) ^ (a >>> 3)) + w[i - 7] + (rotate(b, 17) ^ rotate(b, 19) ^ (b >>> 10))) >>> 0;
     }
     let [a,b,c,d,e,f,g,h] = hash as [number,number,number,number,number,number,number,number];
     for (let i = 0; i < 64; i++) {
-      const t1 = (h + (rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25)) + ((e & f) ^ (~e & g)) + roundConstants[i]! + w[i]!) >>> 0;
+      const t1 = (h + (rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25)) + ((e & f) ^ (~e & g)) + roundConstants[i] + w[i]) >>> 0;
       const t2 = ((rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
       h=g; g=f; f=e; e=(d+t1)>>>0; d=c; c=b; b=a; a=(t1+t2)>>>0;
     }
     const next = [a,b,c,d,e,f,g,h];
-    for (let i = 0; i < 8; i++) hash[i] = (hash[i]! + next[i]!) >>> 0;
+    for (let i = 0; i < 8; i++) hash[i] = (hash[i] + next[i]) >>> 0;
   }
   return hash.map(n => n.toString(16).padStart(8, '0')).join('');
 }

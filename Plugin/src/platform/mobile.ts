@@ -14,6 +14,8 @@ export function mobileAliasProvider(adapter:PrivateAdapter,configDir:string):Ali
   return {async read(vault){
     const provider=adapter.fs;
     // The native chooser exposes no other-vault ID for resolving a config override.
+    // Its native default is the only supported fallback; current configDir is not
+    // evidence of another vault's directory. Failed reads retain the native name.
     const directory=vault.isCurrentVault?configDir:'.obsidian';
     if(!provider || typeof provider.read!=='function' || !vault.path || /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(vault.path) || /^(?:[a-z]:|[\\/])/i.test(directory) || directory.split(/[\\/]/).some(part=>part==='..' || part==='.' || !part))throw Error('Alias read unavailable');
     return method(provider,'read').call(provider,vault.path.replace(/\/$/,'')+'/'+directory+'/plugins/sieve/data.json');

@@ -11,7 +11,7 @@ type AliasSdk=ChooserSdk&DrawerSdk;
 interface Options {document?:Document;sdk?:AliasSdk;timeoutMs?:number}
 
 export function installAliases(app:AliasApp,provider:AliasProvider,current:()=>string,options:Options={}):AliasInstallation {
-  const sdk=options.sdk??Obsidian as unknown as AliasSdk;
+  const sdk=options.sdk??Obsidian;
   let alive=true,epoch=0;const cleanup=new Set<()=>void>();let previousName=current();
   const docs=new Set<Document>();const documentCleanup=new Map<Document,()=>void>();const labelChanges=new Map<Element,{original:string;written:string}>();
   const titleChanges=new Map<Document,{original:string;written:string}>();
@@ -66,9 +66,10 @@ export function installAliases(app:AliasApp,provider:AliasProvider,current:()=>s
   const document=options.document??(typeof window==='object'?window.document:undefined);if(document)attach(document);
   if(app.workspace.on && app.workspace.offref){
     const change=app.workspace.on('layout-change',refresh);cleanup.add(()=>app.workspace.offref!(change));
-    const eventDocument=(value:unknown):Document|undefined=>{const doc=(value as {document?:Document}|null)?.document;return doc&&typeof doc.querySelectorAll==='function'?doc:undefined;};
+    const eventDocument=(value:unknown):Document|undefined=>{const doc=(value as {document?:Document}|null)?.document;return doc?.defaultView&&typeof doc.addEventListener==='function'?doc:undefined;};
     const opened=app.workspace.on('window-open',(_workspace,value)=>{const doc=eventDocument(value);if(doc){attach(doc);refresh();}});cleanup.add(()=>app.workspace.offref!(opened));
-    const closed=app.workspace.on('window-close',(_workspace,value)=>{const doc=eventDocument(value);if(doc)documentCleanup.get(doc)?.();});cleanup.add(()=>app.workspace.offref!(closed));
+    // A tracked document can lose its defaultView before the close notification.
+    const closed=app.workspace.on('window-close',(_workspace,value)=>{const doc=(value as {document?:Document}|null)?.document;if(doc)documentCleanup.get(doc)?.();});cleanup.add(()=>app.workspace.offref!(closed));
   }
   refresh();
   return {get capabilities():AliasCapabilities{return Object.freeze({...capabilities,commands:Object.freeze([...capabilities.commands])});},refresh,dispose(){

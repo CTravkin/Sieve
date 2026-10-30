@@ -121,6 +121,22 @@ test('window-close releases document observers/listeners/tracking and later refr
   h.setCurrent('Live update');assert.doesNotThrow(()=>p.refresh());assert.equal(live.label.textContent,'Live update');assert.equal(h.doc.label.textContent,'Live update');p.dispose();assert.equal(live.handlers.length,0);assert.equal(observers.filter(observer=>observer.connected).length,0);assert.equal(listeners.size,0);
 });
 
+test('window-close releases a tracked document after its browsing context is detached',()=>{
+  const h=aliasHost(),listeners=new Map(),observers=[];
+  h.app.workspace.on=(event,callback)=>{listeners.set(event,callback);return event;};h.app.workspace.offref=event=>listeners.delete(event);
+  const p=install(h),doc=new Document();doc.querySelector=()=>({});
+  doc.defaultView.MutationObserver=class{constructor(){observers.push(this);}observe(){this.connected=true;}disconnect(){this.connected=false;}};
+  try{
+    listeners.get('window-open')({}, {document:doc});assert.equal(doc.label.textContent,'Current alias');assert.equal(observers[0].connected,true);
+    doc.defaultView=null;
+    listeners.get('window-close')({}, {document:doc});
+    assert.equal(doc.handlers.length,0);assert.equal(observers[0].connected,false);assert.equal(doc.label.textContent,'Shared');
+    doc.querySelectorAll=()=>{throw Error('Detached document retained');};
+    h.setCurrent('Live');assert.doesNotThrow(()=>p.refresh());assert.equal(h.doc.label.textContent,'Live');
+    assert.doesNotThrow(()=>listeners.get('window-close')({}, {document:doc}));
+  }finally{p.dispose();}
+});
+
 test('a closed document cancels its pending drawer replay while the main window stays live',async()=>{
   const h=aliasHost(),gate=deferred(),listeners=new Map();h.provider.read=()=>gate.promise;h.app.workspace.on=(event,callback)=>{listeners.set(event,callback);return event;};h.app.workspace.offref=event=>listeners.delete(event);const p=install(h),popout=new Document();let nativeClicks=0;
   popout.switcher.handlers.push(()=>nativeClicks++);listeners.get('window-open')({}, {document:popout});popout.switcher.click();await tick();listeners.get('window-close')({}, {document:popout});gate.resolve({schemaVersion:1,rules:'',displayName:'Late'});await tick();assert.equal(nativeClicks,0);h.setCurrent('Live');p.refresh();assert.equal(h.doc.label.textContent,'Live');assert.equal(popout.label.textContent,'Shared');p.dispose();

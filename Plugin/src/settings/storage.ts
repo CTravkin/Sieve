@@ -10,7 +10,7 @@ export interface SettingsIO { exists(path:string):Promise<boolean>; read(path:st
 export interface SettingsError { readonly code:'read'|'json'|'schema'|'rules'|'write'|'timeout'|'cancelled'; readonly diagnostics?:readonly Diagnostic[] }
 export interface SettingsState { readonly saved?:SieveSettings; readonly active?:SieveSettings; readonly draft:SieveSettings; readonly pending:boolean; readonly fallback:boolean; readonly needsRecovery:boolean; readonly activeRevision?:string; readonly error?:SettingsError }
 interface Prepared { compiled:Extract<CompileResult,{ok:true}>; snapshot:WorkingSnapshot }
-const sameIncludes=(a:WorkingSnapshot|undefined,b:WorkingSnapshot|undefined):boolean=>!!a && !!b && a.includes.length===b.includes.length && a.includes.every((entry,i)=>entry.path===b.includes[i]!.path && entry.contentBase64===b.includes[i]!.contentBase64);
+const sameIncludes=(a:WorkingSnapshot|undefined,b:WorkingSnapshot|undefined):boolean=>!!a && !!b && a.includes.length===b.includes.length && a.includes.every((entry,i)=>entry.path===b.includes[i].path && entry.contentBase64===b.includes[i].contentBase64);
 export type StartupResult={ok:true;compiled:Prepared['compiled'];fallback:boolean}|{ok:false;error:SettingsError};
 export type SaveResult={ok:true;changed:boolean;pending:boolean}|{ok:false;error:SettingsError};
 export type ValidationResult={ok:true}|{ok:false;error:SettingsError};
