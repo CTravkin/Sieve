@@ -28,6 +28,14 @@ The desktop registry uses only the read-only Electron IPC channels `vault` and `
 
 ### Installation
 
+#### Obsidian plugin directory (recommended)
+
+Open **Settings → Community plugins** and turn on community plugins if prompted. Select **Browse**, search for **Sieve**, then choose **Install** and **Enable**. The plugin is also listed in the [Obsidian plugin directory](https://community.obsidian.md/plugins/sieve).
+
+Reopen the vault after enabling Sieve to activate early filtering.
+
+#### GitHub Releases (manual)
+
 Download the plugin ZIP from [GitHub Releases](https://github.com/CTravkin/Sieve/releases) and extract its `sieve` folder into `<vault>/.obsidian/plugins/`. A custom Obsidian configuration directory can be used instead of `.obsidian`.
 
 Enable Sieve under **Settings → Community plugins**, then reopen the vault. The initial enable happens after the vault has loaded; early filtering begins on the next opening.
