@@ -64,6 +64,22 @@ test('cancelled read workers finish existing operations but never launch the rem
   const pending=resolveNames(items,{async read(){starts++;await gate;return config('Read');}},'',1500,()=>cancelled);await tick();assert.equal(starts,4);cancelled=true;release();await pending;assert.equal(starts,4);
 });
 
+test('an early deadline timer never replaces a still-pending native read with another read',async()=>{
+  const items=Array.from({length:20},(_,index)=>({path:'/v'+index,name:'Original '+index,isCurrentVault:false}));
+  const hadWindow=Object.hasOwn(globalThis,'window'),originalWindow=globalThis.window,timers=new Map();let nextTimer=0,reads=0,cancelled=false,release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  globalThis.window={setTimeout(callback){const id=++nextTimer;timers.set(id,callback);return id;},clearTimeout(id){timers.delete(id);}};
+  let pending;
+  try{
+    pending=resolveNames(items,{async read(){reads++;await gate;return config('Read');}},'',60000,()=>cancelled);
+    await tick();assert.equal(reads,4);
+    timers.values().next().value();await tick();
+    const startsAfterDeadline=reads;
+    cancelled=true;release();await pending;
+    assert.equal(startsAfterDeadline,4,'a fired deadline ends the projection even before wall-clock time reaches it');
+  }finally{cancelled=true;release();if(pending)await pending;if(hadWindow)globalThis.window=originalWindow;else delete globalThis.window;}
+});
+
 test('chooser snapshot invalidation retains native names and selection without per-item IPC',async()=>{
   const h=aliasHost(),list=h.list,ipcCalls=[];let invalid=false;
   globalThis.window={electron:{ipcRenderer:{sendSync(channel){ipcCalls.push(channel);if(invalid)throw Error('registry unavailable');return channel==='vault'?{path:list[0].path}:Object.fromEntries(list.map(v=>[v.id,{path:v.path}]));}}},require:()=>path.posix,localStorage:{getItem:()=>null}};
